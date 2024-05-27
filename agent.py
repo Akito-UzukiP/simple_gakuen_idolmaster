@@ -2,8 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions.categorical import Categorical
+from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 class CardTransformer(nn.Module):
-    def __init__(self,card_feature_dim, player_feature_dim, max_cards = 30, d_model=128, nhead=8, num_layers=2):
+    def __init__(self,card_feature_dim, player_feature_dim, max_cards = 8, d_model=128, nhead=8, num_layers=2):
         super(CardTransformer, self).__init__()
         self.card_embedding = nn.Linear(card_feature_dim, d_model)
         self.player_embedding = nn.Linear(player_feature_dim, d_model)
@@ -33,67 +34,13 @@ class CardTransformer(nn.Module):
         x = x.permute(1, 0, 2)
         x = x.mean(dim=1)
         return x
-# class CustomActorCritic(nn.Module):
-#     def __init__(self, observation_space, action_space, card_feature_dim, player_feature_dim, d_model=128, nhead=8, num_layers=2):
-#         super(CustomActorCritic, self).__init__()
-#         self.card_transformer = CardTransformer(card_feature_dim, player_feature_dim, d_model, nhead, num_layers)
-#         self.action_head = nn.Linear(d_model, 1)
-#         self.value_head = nn.Linear(d_model, 1)
-
-#     def forward(self, x_cards, x_player):
-#         features = self.card_transformer(x_cards, x_player)
-#         # 对于每一个卡片，输出一个动作概率
-#         action_logits = self.action_head(features)
-#         action_logits = action_logits.squeeze(-1)
-#         # mean_pooling
-#         features = features.mean(dim=1)
-#         values = self.value_head(features)
-#         return action_logits, values
-
-#     def act(self, x_cards, x_player):
-#         action_logits, values = self.forward(x_cards, x_player)
-#         action_probs = F.softmax(action_logits, dim=-1)
-#         dist = Categorical(action_probs)
-#         action = dist.sample()
-#         return action, dist.log_prob(action), dist.entropy(), values
-
-#     def get_value(self, x_cards, x_player):
-#         _, values = self.forward(x_cards, x_player)
-#         return values
-
-#     def evaluate_actions(self, x_cards, x_player, action):
-#         action_logits, values = self.forward(x_cards, x_player)
-#         action_probs = F.softmax(action_logits, dim=-1)
-#         dist = Categorical(action_probs)
-#         return dist.log_prob(action), dist.entropy(), values
-
-
-# class Agent:
-#     def __init__(self, envs):
-#         self.envs = envs
-#         self.actor_critic = CustomActorCritic(
-#             envs.single_observation_space,
-#             envs.single_action_space,
-#             card_feature_dim=13,
-#             player_feature_dim=10,
-#             d_model=128,
-#             nhead=8,
-#             num_layers=2
-#         )
-
-#     def get_action_and_value(self, obs, action=None):
-#         x_cards = obs['card']
-#         x_player = obs['game']
-#         if action is None:
-#             return self.actor_critic.act(x_cards, x_player)
-#         else:
-#             return self.actor_critic.evaluate_actions(x_cards, x_player, action)
-#     def to(self, device):
-#         self.actor_critic.to(device)
-#         return self
-# 测试模型
-# model = CardTransformer(card_feature_dim=13, player_feature_dim=10,d_model=128)
-# sample_cards = torch.randn(10, 5, 13)
-# sample_player = torch.randn(10, 10)
-# output = model(sample_cards, sample_player)
-# print(output)
+    
+class CustomExtractor(BaseFeaturesExtractor):
+    def __init__(self, observation_space, features_dim):
+        super(CustomExtractor, self).__init__(observation_space, features_dim)
+        self.card_transformer = CardTransformer(card_feature_dim=19, player_feature_dim=13,d_model=features_dim)
+    def forward(self, observations):
+        game = observations['game']
+        card = observations['card']
+        card = self.card_transformer(card, game)
+        return card

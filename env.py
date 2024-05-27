@@ -14,12 +14,12 @@ class GakuenIdolMasterEnv(gym.Env):
         self.game.start_round()
         
         # 动作空间：选择手牌中的一张卡
-        self.max_cards = 30
+        self.max_cards = 8
         self.action_space = spaces.Discrete(self.max_cards)
         #print(self.max_cards)
         # 观察空间
         self.env_shape = self.game.observe()[0].shape[0]
-        self.card_shape = (30, 19)
+        self.card_shape = (self.max_cards, 19)
         #print(self.env_shape, self.card_shape)
         self.observation_space = spaces.Dict({
             'game': spaces.Box(low=-10, high=10, shape=(self.env_shape,), dtype=np.float32),
@@ -34,7 +34,7 @@ class GakuenIdolMasterEnv(gym.Env):
         observation = self.game.observe()
         # observation[1]要补到30，用[-1] + [0]*18
         card_observation = np.array(observation[1])
-        num_rows_to_add = 30 - observation[1].shape[0]
+        num_rows_to_add = self.max_cards - observation[1].shape[0]
         fill_value = np.array([[-1] + [0]*18] * num_rows_to_add)
         card_observation = np.vstack((observation[1], fill_value))
         return {
@@ -51,13 +51,6 @@ class GakuenIdolMasterEnv(gym.Env):
         self.game.start_round()
         self.current_score = 0
         return self._get_obs()
-    def get_action_mask(self):
-        mask = np.zeros(self.max_cards)
-        # 对于所有[0]位为0的卡，可以被打出
-        for i in range(self.max_cards):
-            if self.game.observe()[1][i][0] == 0:
-                mask[i] = 1
-        return mask
     def step(self, action):
         # 无效动作
         #print(action)
@@ -69,11 +62,14 @@ class GakuenIdolMasterEnv(gym.Env):
         done = self.game.is_over
         reward = self.game.score - self.current_score
         if done:
-            reward += self.game.hp *5
+            reward += self.game.hp *1
+            reward += self.game.turn_left * 10
         self.current_score = self.game.score
         self.game.start_round()
         return self._get_obs(), reward, done, {}
+    
     def render(self, mode='human'):
-        print(self.game)
-env = GakuenIdolMasterEnv()
-env._get_obs()
+        if mode == 'human':
+            print(self.game)
+# env = GakuenIdolMasterEnv()
+# env._get_obs()

@@ -48,20 +48,34 @@ class Game:
         self.rest = create_card('休憩',cost=-2)
 
     def __str__(self) -> str:
-        string = "Turns left: " + str(self.turn_left) + "\n"
-        string += "Target: " + str(self.target) + "\n"
-        string += "Playable count: " + str(self.playable_cnt) + "\n"
-        string += 'HP: ' + str(self.hp) + ', '
-        string += 'Robust: ' + str(self.robust) + ', ' if self.robust > 0 else ''
-        string += 'Good Impression: ' + str(self.good_impression) + ', ' if self.good_impression > 0 else ''
-        string += 'Good Condition: ' + str(self.good_condition) + ', ' if self.good_condition > 0 else ''
-        string += 'Best Condition: ' + str(self.best_condition) + ', ' if self.best_condition > 0 else ''
-        string += 'Motivation: ' + str(self.motivation) + ', ' if self.motivation > 0 else ''
-        string += 'Score: ' + str(self.score) + '\n'
-        string += 'Hand: ' + str(self.hand) + '\n'
-        string += 'Deck: ' + str(self.deck) + '\n'
-        string += 'Discard: ' + str(self.discard) + '\n'
-        string += 'Exile: ' + str(self.exile)
+        # string = "剩余回合数: " + str(self.turn_left) + "\n"
+        # string += "目标分数: " + str(self.target) + "\n"
+        # string += "可打出牌数: " + str(self.playable_cnt) + "\n"
+        # string += '体力: ' + str(self.hp) + ', '
+        # string += '元気: ' + str(self.robust) + ', ' if self.robust > 0 else ''
+        # string += '好印象: ' + str(self.good_impression) + ', ' if self.good_impression > 0 else ''
+        # string += '好調: ' + str(self.good_condition) + ', ' if self.good_condition > 0 else ''
+        # string += '絶好調: ' + str(self.best_condition) + ', ' if self.best_condition > 0 else ''
+        # string += 'やる気: ' + str(self.motivation) + ', ' if self.motivation > 0 else ''
+        # string += 'スコア: ' + str(self.score) + '\n'
+        # string += '手牌: ' + str(self.hand) + '\n'
+        # string += '牌组: ' + str(self.deck) + '\n'
+        # string += '弃牌堆: ' + str(self.discard) + '\n'
+        # string += '除外: ' + str(self.exile)
+        string = "剩余回合数: " + str(self.turn_left) + "\n"
+        string += "目标分数: " + str(self.target) + "\n"
+        string += "可打出牌数: " + str(self.playable_cnt) + "\n"
+        string += '体力: ' + str(self.hp) + ', '
+        string += '元気: ' + str(self.robust) + ', '
+        string += '好印象: ' + str(self.good_impression) + ', '
+        string += '好調: ' + str(self.good_condition) + ', '
+        string += '絶好調: ' + str(self.best_condition) + ', '
+        string += 'やる気: ' + str(self.motivation) + ', ' 
+        string += 'スコア: ' + str(self.score) + '\n'
+        string += '手牌: ' + str(self.hand) + '\n'
+        string += '牌组: ' + str(self.deck) + '\n'
+        string += '弃牌堆: ' + str(self.discard) + '\n'
+        string += '除外: ' + str(self.exile)
         return string
     def __repr__(self) -> str:
         return self.__str__()
@@ -222,18 +236,19 @@ class Game:
                 tmp = [-1]
             tmp.extend(card.observe())
             card_observation.append(tmp)
-        for card in self.deck:
-            tmp = [1]
-            tmp.extend(card.observe())
-            card_observation.append(tmp)
-        for card in self.discard:
-            tmp = [2]
-            tmp.extend(card.observe())
-            card_observation.append(tmp)
-        for card in self.exile:
-            tmp = [3]
-            tmp.extend(card.observe())
-            card_observation.append(tmp)
+        # 仅观察手牌
+        # for card in self.deck:
+        #     tmp = [1]
+        #     tmp.extend(card.observe())
+        #     card_observation.append(tmp)
+        # for card in self.discard:
+        #     tmp = [2]
+        #     tmp.extend(card.observe())
+        #     card_observation.append(tmp)
+        # for card in self.exile:
+        #     tmp = [3]
+        #     tmp.extend(card.observe())
+        #     card_observation.append(tmp)
         observation = np.array(observation, dtype=np.float32)
         card_observation = np.array(card_observation, dtype=np.float32)
         return observation, card_observation
@@ -242,4 +257,6 @@ class Game:
 if __name__ == "__main__":
     game = Game()
     game.deck = create_random_ktn_deck()
-    print(game.observe()[0].size, game.observe()[1].shape)
+    game.shuffle()
+    game.start_round()
+    print(game.observe())

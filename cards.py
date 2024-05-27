@@ -133,9 +133,15 @@ honbanzenya = create_card('本番前夜', cost = 5, good_impression = 4, motivat
 # cost0, good_impression-1, additional_turn1, additional_playable1, 升级 additional_draw1
 watashi_ga_star = create_card('私がスター', good_impression = -1, additional_turn = 1, additional_playable = 1, upgrade_additional_draw = 1)
 
+# 手拍子
+# cost5, score_good_impression_percent1.5, upgrade_score_good_impression_percent0.5, exile
+clap = create_card('手拍子', cost = 5, score_good_impression_percent = 1.5, upgrade_score_good_impression_percent=0.5, exile=True)
+
 # 休憩
 # cost-2
 rest = create_card('休憩', cost = -2, limit = True)
+
+
 # 以下是特殊卡片
 # ktn的ssr
 # よそ見はだめ
@@ -150,7 +156,7 @@ def create_ktn_deck():
 # 多次触发加分
 # 
 
-all_cards = [appeal_basic, pose_basic, expression_basic, eye_contact_basic, cute_gesture, change_of_mood, behavior_basic, consciousness_basic, smile_200, touch, lovely_wink, rhythmic, happy_time, restart, kirameki, honbanzenya, watashi_ga_star, ktn_ssr]
+all_cards = [clap, appeal_basic, pose_basic, expression_basic, eye_contact_basic, cute_gesture, change_of_mood, behavior_basic, consciousness_basic, smile_200, touch, lovely_wink, rhythmic, happy_time, restart, kirameki, honbanzenya, watashi_ga_star, ktn_ssr]
 upgraded_cards = [card.upgrade() for card in all_cards]
 
 # 随机ktn卡组，包含基础ktn卡组加上15张随机卡，其中有5张升级卡，limit卡仅能有一张

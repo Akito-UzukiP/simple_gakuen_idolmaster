@@ -3,17 +3,8 @@ from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.utils import get_device
 from env import GakuenIdolMasterEnv
-from agent import CardTransformer
+from agent import CardTransformer, CustomExtractor
 
-class CustomExtractor(BaseFeaturesExtractor):
-    def __init__(self, observation_space, features_dim):
-        super(CustomExtractor, self).__init__(observation_space, features_dim)
-        self.card_transformer = CardTransformer(card_feature_dim=19, player_feature_dim=13,d_model=features_dim)
-    def forward(self, observations):
-        game = observations['game']
-        card = observations['card']
-        card = self.card_transformer(card, game)
-        return card
 
 policy_kwargs = dict(
     features_extractor_class=CustomExtractor,

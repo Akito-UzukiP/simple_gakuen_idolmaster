@@ -40,6 +40,7 @@ def cost(game, num):
             game.robust = 0
     else:
         game.hp -= num
+    game.hp = min(game.hp, game.init_hp)
 
 def direct_cost(game, num):
     if game.hp_damage_increase > 0:

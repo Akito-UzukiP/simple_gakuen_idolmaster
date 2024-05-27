@@ -11,10 +11,10 @@ while not game.is_over:
     print(game)
     action = 99
     while game.check_playable(action) == False:
-        action = int(input("Please input the card index to play: "))
+        action = int(input("输入打出的牌(从0开始): "))
         print(game)
 
     game.play(action)
     print(game)
     game.end_round()
-print("Game Over")
+print("结束")
