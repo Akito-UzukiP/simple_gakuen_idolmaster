@@ -8,7 +8,7 @@ from agent import CardTransformer
 class CustomExtractor(BaseFeaturesExtractor):
     def __init__(self, observation_space, features_dim):
         super(CustomExtractor, self).__init__(observation_space, features_dim)
-        self.card_transformer = CardTransformer(card_feature_dim=13, player_feature_dim=10,d_model=features_dim)
+        self.card_transformer = CardTransformer(card_feature_dim=19, player_feature_dim=13,d_model=features_dim)
     def forward(self, observations):
         game = observations['game']
         card = observations['card']
@@ -21,6 +21,8 @@ policy_kwargs = dict(
 )
     
 env = make_vec_env(GakuenIdolMasterEnv, n_envs=5)
-model = PPO("MultiInputPolicy", env, verbose=1, tensorboard_log="./log",device=get_device(),policy_kwargs=policy_kwargs,n_epochs=10, batch_size=256)
+model = PPO("MultiInputPolicy", env, verbose=1, tensorboard_log="./log",device=get_device(),policy_kwargs=policy_kwargs,n_epochs=20, batch_size=512)
 #print(model.policy)
-model.learn(total_timesteps=204800, log_interval=1,progress_bar=True)
+model.learn(total_timesteps=204800, log_interval=1)
+# save
+model.save("ppo_gakuen_idol_master")
