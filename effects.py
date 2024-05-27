@@ -44,7 +44,8 @@ def score_good_impression_percent(game, percent):
     score(game, tmp)
 def score_good_impression(game):
     score(game, game.good_impression)
-
+def motivation(game, num):
+    game.motivation += num
 
 def end_turn(game):
     if game.good_condition > 0:
@@ -64,16 +65,16 @@ def effect_roll(effects: list[int], game):
         依次执行效果列表中的效果，按照顺序传入效果参数，执行效果，理论上传入的0应当表示无效果
         顺序为 cost, direct_cost, robust, good_impression, good_condition, best_condition, score, score_robust_percent, score_good_impression_percent
     '''
-    assert len(effects) == 9
+    assert len(effects) == 10
     cost(game, effects[0])
     direct_cost(game, effects[1])
     robust(game, effects[2])
-    good_impression(game, effects[3])
-    good_condition(game, effects[4])
-    best_condition(game, effects[5])
-    score(game, effects[6])
-    score_robust_percent(game, effects[7])
-    score_good_impression_percent(game, effects[8])
+    motivation(game, effects[3])
+    good_impression(game, effects[4])
+    good_condition(game, effects[5])
+    best_condition(game, effects[6])
+    score(game, effects[7])
+    score_robust_percent(game, effects[8])
+    score_good_impression_percent(game, effects[9])
     score_good_impression(game)
     end_turn(game)
-

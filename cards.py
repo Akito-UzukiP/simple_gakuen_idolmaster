@@ -1,5 +1,5 @@
 # 卡片基础类，包含卡片的基础攻击力 attack和cost
-
+import numpy as np
 class Card:
     def __init__(self, name, effects: list[int], upgrade_effects:list[int], exile = False, upgraded = False):
         self.name = name
@@ -12,12 +12,19 @@ class Card:
         string += '体力: ' + str(self.effects[0]) + ', ' 
         string += '直接体力: ' + str(self.effects[1]) + ', ' if self.effects[1] > 0 else ''
         string += '元気: ' + str(self.effects[2]) + ', ' if self.effects[2] > 0 else ''
-        string += '好印象: ' + str(self.effects[3]) + ', ' if self.effects[3] > 0 else ''
-        string += '好調: ' + str(self.effects[4]) + ', ' if self.effects[4] > 0 else ''
-        string += '絶好調: ' + str(self.effects[5]) + ', ' if self.effects[5] > 0 else ''
-        string += 'パラメータ: ' + str(self.effects[6]) + ', ' if self.effects[6] > 0 else ''
-        string +=   str(self.effects[7]) + '元気パラメータUP, ' if self.effects[7] > 0 else ''
-        string += str(self.effects[8]) + '好印象パラメータUP, ' if self.effects[8] > 0 else ''
+        string += 'やる気: ' + str(self.effects[3]) + ', ' if self.effects[3] > 0 else ''
+        string += '好印象: ' + str(self.effects[4]) + ', ' if self.effects[4] > 0 else ''
+        string += '好調: ' + str(self.effects[5]) + ', ' if self.effects[5] > 0 else ''
+        string += '絶好調: ' + str(self.effects[6]) + ', ' if self.effects[6] > 0 else ''
+        string += 'パラメータ: ' + str(self.effects[7]) + ', ' if self.effects[7] > 0 else ''
+        string +=  str(self.effects[8]) + '元気パラメータUP, ' if self.effects[8] > 0 else ''
+        string += str(self.effects[9]) + '好印象パラメータUP, ' if self.effects[9] > 0 else ''
+        # string += '好印象: ' + str(self.effects[3]) + ', ' if self.effects[3] > 0 else ''
+        # string += '好調: ' + str(self.effects[4]) + ', ' if self.effects[4] > 0 else ''
+        # string += '絶好調: ' + str(self.effects[5]) + ', ' if self.effects[5] > 0 else ''
+        # string += 'パラメータ: ' + str(self.effects[6]) + ', ' if self.effects[6] > 0 else ''
+        # string +=   str(self.effects[7]) + '元気パラメータUP, ' if self.effects[7] > 0 else ''
+        # string += str(self.effects[8]) + '好印象パラメータUP, ' if self.effects[8] > 0 else ''
         string += 'レッスン中一回' if self.exile else ''
         if string.endswith(', '):
             string = string[:-2]
@@ -29,14 +36,22 @@ class Card:
         self.effects = self.upgrade_effects
         self.upgraded = True
 
-def create_card(name, cost = 0, direct_cost = 0, robust = 0, good_impression = 0, good_condition = 0, best_condition = 0, score = 0, score_robust_percent = 0, score_good_impression_percent = 0, 
+    def observe(self):
+        # 将卡片的效果转化为可微的数值
+        observation = []
+        observation.extend(self.effects)
+        observation.append(1 if self.exile else 0)
+        observation.append(1 if self.upgraded else 0)
+        return np.array(observation)
+
+def create_card(name, cost = 0, direct_cost = 0, robust = 0, motivation=0, good_impression = 0, good_condition = 0, best_condition = 0, score = 0, score_robust_percent = 0, score_good_impression_percent = 0, 
                 upgrade_cost = 0, upgrade_direct_cost = 0, upgrade_robust = 0, upgrade_good_impression = 0, upgrade_good_condition = 0, upgrade_best_condition = 0, upgrade_score = 0, upgrade_score_robust_percent = 0, upgrade_score_good_impression_percent = 0,
                 exile = False, upgraded = False):
-    return Card(name, [cost, direct_cost, robust, good_impression, good_condition, best_condition, score, score_robust_percent, score_good_impression_percent], 
-                [upgrade_cost, upgrade_direct_cost, upgrade_robust, upgrade_good_impression, upgrade_good_condition, upgrade_best_condition, upgrade_score, 
+    return Card(name, [cost, direct_cost, robust, motivation, good_impression, good_condition, best_condition, score, score_robust_percent, score_good_impression_percent], 
+                [upgrade_cost, upgrade_direct_cost, upgrade_robust, motivation, upgrade_good_impression, upgrade_good_condition, upgrade_best_condition, upgrade_score, 
                  upgrade_score_robust_percent, upgrade_score_good_impression_percent], exile, upgraded)
-# effect是效果列表，cost, direct_cost, robust, good_impression, good_condition, best_condition, score, score_robust_percent, score_good_impression_percent
-# 即： 体力消耗，真实体力消耗，加元气，加好印象，加好调，加绝好调，加分数，加分数（按元气比例），加分数（按好印象）
+# effect是效果列表，cost, direct_cost, robust, motivation, motivation, good_impression, good_condition, best_condition, score, score_robust_percent, score_good_impression_percent
+# 即： 体力消耗，真实体力消耗，加元气，加干劲, 加好印象，加好调，加绝好调，加分数，加分数（按元气比例），加分数（按好印象）
 
 # 以下是卡片的具体效果
 # アピールの基本
@@ -53,10 +68,24 @@ expression_basic = create_card('表現の基本', robust = 4, exile = True)
 eye_contact_basic = create_card('目線の基本', cost = 2, good_impression = 2)
 # 
 # 可愛い仕草
-# cost5, good_impression2, score_good_imporession100
+# cost5, good_impression2, score_good_imporession1.0
 cute_gesture = create_card('可愛い仕草', cost = 5, good_impression = 2, score_good_impression_percent = 1.0, exile = True)
 
+# 気分転換
+# direct_cost5, score_robust_percent1.0, exile
+change_of_mood = create_card('気分転換', direct_cost = 5, score_robust_percent = 1.0, exile = True)
 
+# 振る舞いの基本
+# cost1, good_condition2, robust1
+behavior_basic = create_card('振る舞いの基本', cost = 1, good_condition = 2, robust = 1)
+
+# 意識の基本
+# cost2, motivation2, robust1
+consciousness_basic = create_card('意識の基本', cost = 2, motivation = 2, robust = 1)
+
+# 休憩
+# cost-2
+rest = create_card('休憩', cost = -2)
 # 以下是特殊卡片
 # ktn的ssr
 # よそ見はだめ
@@ -65,3 +94,8 @@ ktn_ssr = create_card('よそ見はだめ♪', cost = 6, good_impression = 7, ex
 
 def create_ktn_deck():
     return [appeal_basic]*2 + [pose_basic]*1 + [expression_basic]*2 + [eye_contact_basic]*2 + [cute_gesture]*1 + [ktn_ssr]*1
+
+
+# 特殊效果：
+# 多次触发加分
+# 
