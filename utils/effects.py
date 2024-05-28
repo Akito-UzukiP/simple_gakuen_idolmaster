@@ -1,12 +1,3 @@
-# 白伤
-    # def __init__(self):
-    #     self.hp = 30
-    #     self.robust = 0
-    #     self.good_impression = 0
-    #     self.good_condition = 0
-    #     self.best_condition = 0
-    #     self.motivation = 0
-
 def score(game, num):
     if game.good_condition > 0 and game.best_condition > 0:
         num += int(num * (1.5+0.1*game.good_condition))
@@ -17,6 +8,7 @@ def score(game, num):
 def robust(game, num):
     if num > 0:
         game.robust += num + game.motivation
+    game.robust = int(game.robust)
 def good_impression(game, num):
     game.good_impression += num
 def good_condition(game, num):
@@ -27,12 +19,17 @@ def best_condition(game, num):
 
 def cost(game, num):
     # 先结算体力消耗增加，再结算体力消耗减少，再结算直接体力消耗减少
+    if num < 0:
+        game.hp -= num
+        return
     if game.hp_damage_increase > 0:
         num *= 2
     if game.hp_damage_decrease > 0:
         num /= 2
     if game.hp_damage_decrease_direct > 0:
         num -= game.hp_damage_decrease_direct
+    # floor
+    num = int(num)
     if game.robust > 0:
         if game.robust >= num:
             game.robust -= num
@@ -50,6 +47,7 @@ def direct_cost(game, num):
         num /= 2
     if game.hp_damage_decrease_direct > 0:
         num -= game.hp_damage_decrease_direct
+    num = int(num)
     game.hp -= num
 
 def score_robust_percent(game, percent):

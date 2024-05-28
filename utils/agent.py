@@ -41,32 +41,21 @@ class CardMLP(nn.Module):
         super(CardMLP, self).__init__()
         self.card_embedding = nn.Linear(card_feature_dim, d_model)
         self.player_embedding = nn.Linear(player_feature_dim, d_model)
+        self.position_embedding = nn.Embedding(max_cards, d_model)
         self.max_cards = max_cards
         self.mlp = nn.Sequential(
-            nn.Linear(d_model*self.max_cards, 256),
+            nn.Linear(d_model*self.max_cards, d_model),
             nn.ReLU(),
-            nn.Linear(256, 512),
-            nn.Dropout(0.1),
-            nn.ReLU(),
-            nn.Linear(512, 256),
-            nn.Dropout(0.1),
-            nn.ReLU(),
-            nn.Linear(256, 128),
+            nn.Linear(d_model, d_model),
             nn.Dropout(0.1),
             nn.ReLU())
     def forward(self, x_cards, x_player):
         x_cards = self.card_embedding(x_cards)
-        # 将x_cards补全到max_cards，补全采用[-2] + [0] * (x_cards.size(-1) - 1)的方式
-        if x_cards.size(1) < self.max_cards:
-            padding = torch.zeros(x_cards.size(0), self.max_cards - x_cards.size(1), x_cards.size(-1)).to(x_cards.device)
-            padding[:, :, 0] = -2
-            x_cards = torch.cat([x_cards, padding], dim=1)
+        x_cards = x_cards + self.position_embedding.weight[:x_cards.size(1)]
         x_player = self.player_embedding(x_player)
-        x_player = x_player.unsqueeze(1).repeat(1, x_cards.size(1), 1)
-        x = x_cards + x_player
-        x = x.view(x.size(0), -1)
+        x = x_cards.view(x_cards.size(0), -1)
         #print(x.shape)
-        x = self.mlp(x)
+        x = self.mlp(x) + x_player
         return x
 
     

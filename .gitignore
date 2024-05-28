@@ -1,5 +1,10 @@
 __pycache__/
 log/
+models/*
 play.ipynb
 *.zip
 *.ipynb
+cards.csv
+cards.txt
+effects.txt
+produces.txt

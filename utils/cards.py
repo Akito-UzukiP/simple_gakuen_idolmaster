@@ -10,12 +10,20 @@ class Card:
         self.limit = limit
         self.first = first
 
+        # 新的卡片效果
+        self.score_time = 1 # 可能有多次触发加分
+
+        # 打出卡片时的需求
+        self.requirements = [0] * len(self.effects)
+
+
     def __str__(self):
         string = '(' + self.name + '+: ' if self.upgraded else '(' + self.name + ': '
         string += '体力: ' + str(self.effects[0]) + ', ' 
         string += '直接体力: ' + str(self.effects[1]) + ', ' if self.effects[1] > 0 else ''
         string += '元気: ' + str(self.effects[2]) + ', ' if self.effects[2] > 0 else ''
         string += 'やる気: ' + str(self.effects[3]) + ', ' if self.effects[3] > 0 else ''
+        string += 'やる気消耗: ' + str(self.effects[3]) + ', ' if self.effects[3] < 0 else ''
         string += '好印象: ' + str(self.effects[4]) + ', ' if self.effects[4] > 0 else ''
         string += '好印象消耗:' + str(self.effects[4]) + ', ' if self.effects[4] < 0 else ''
         string += '好調: ' + str(self.effects[5]) + ', ' if self.effects[5] > 0 else ''
@@ -92,7 +100,7 @@ change_of_mood = create_card('気分転換', direct_cost = 5, score_robust_perce
 
 # 振る舞いの基本
 # cost1, good_condition2, robust1
-behavior_basic = create_card('振る舞いの基本', cost = 1, good_condition = 2, robust = 1, upgrade_good_condition=1)
+# behavior_basic = create_card('振る舞いの基本', cost = 1, good_condition = 2, robust = 1, upgrade_good_condition=1)
 
 # 意識の基本
 # cost2, motivation2, robust1
@@ -151,7 +159,7 @@ tv_show = create_card('テレビ出演', cost = 1, robust = 3, hp_damage_decreas
 
 # 星屑センセーション
 # motivation-3,good_impression5, additional_playable1, upgrade_good_impression2, upgrade_additional_draw1, limit, exile
-# stardust_sensation = create_card('星屑センセーション', motivation = -3, good_impression = 5, additional_playable = 1, upgrade_good_impression=2, upgrade_additional_draw=1, limit=True,exile=True) 
+stardust_sensation = create_card('星屑センセーション', motivation = -3, good_impression = 5, additional_playable = 1, upgrade_good_impression=2, upgrade_additional_draw=1, limit=True,exile=True) 
 
 # 休憩
 # cost-2
@@ -173,7 +181,7 @@ def create_ktn_deck():
 # 
 
 #all_cards = [clap, appeal_basic, pose_basic, expression_basic, eye_contact_basic, cute_gesture, change_of_mood, behavior_basic, consciousness_basic, smile_200, touch, lovely_wink, rhythmic, happy_time, restart, kirameki, honbanzenya, watashi_ga_star, ktn_ssr]
-all_cards = [clap, appeal_basic, pose_basic, expression_basic, eye_contact_basic, cute_gesture, change_of_mood, behavior_basic, consciousness_basic, smile_200, touch, lovely_wink, rhythmic, happy_time, restart, kirameki, honbanzenya, watashi_ga_star, idol_declaration, tv_show, good_condition, rest]
+all_cards = [clap, appeal_basic, pose_basic, expression_basic, eye_contact_basic, cute_gesture, change_of_mood, consciousness_basic, smile_200, touch, lovely_wink, rhythmic, happy_time, restart, kirameki, honbanzenya, watashi_ga_star, idol_declaration, tv_show, good_condition, stardust_sensation]
 upgraded_cards = [card.upgrade() for card in all_cards]
 
 # 随机ktn卡组，包含基础ktn卡组加上15张随机卡，其中有5张升级卡，limit卡仅能有一张
@@ -183,15 +191,19 @@ def create_random_ktn_deck():
     for i in range(10):
         card = random.choice(all_cards)
         if card.limit and all_cards[i] not in deck and upgraded_cards[i] not in deck:
+            #print(card)
             while card in deck:
                 card = random.choice(all_cards)
         deck.append(card)
     for i in range(5):
         card = random.choice(upgraded_cards)
         if card.limit and all_cards[i] not in deck and upgraded_cards[i] not in deck:
+            #print(card)
             while card in deck:
                 card = random.choice(upgraded_cards)
         deck.append(card)
     return deck
-#print(create_random_ktn_deck())
-#print(create_card('ラブリーウインク', cost = 5, good_impression = 4, score_good_impression_percent = 0.6, upgrade_score_good_impression_percent=0.2).upgrade())
+if __name__ == "__main__":
+    print("-------------------")
+    print(create_random_ktn_deck())
+    #print(create_card('ラブリーウインク', cost = 5, good_impression = 4, score_good_impression_percent = 0.6, upgrade_score_good_impression_percent=0.2).upgrade())

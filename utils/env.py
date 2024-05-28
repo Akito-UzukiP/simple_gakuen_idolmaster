@@ -1,8 +1,8 @@
 import gym
 from gym import spaces
 import numpy as np
-from game import Game
-import cards
+from .game import Game
+from . import cards
 import random
 class GakuenIdolMasterEnv(gym.Env):
     def __init__(self):
@@ -28,6 +28,20 @@ class GakuenIdolMasterEnv(gym.Env):
         self.current_score = 0
         self.seed()
         self.last_steps = [-1] * self.game.init_turn
+
+        # 随机mapping，将0-7映射到0-7，打乱排序，防止模型记住顺序
+        self.random_mapping = np.arange(self.max_cards)
+        self._shuffle_mapping()
+        
+    def _shuffle_mapping(self):
+        np.random.shuffle(self.random_mapping)
+    def _apply_mapping(self, observation):
+        mapped_cards = observation['card'][self.random_mapping]
+        return {
+            'game': observation['game'],
+            'card': mapped_cards
+        }
+
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
         return [seed]
@@ -41,10 +55,12 @@ class GakuenIdolMasterEnv(gym.Env):
             card_observation = np.vstack((observation[1], fill_value))
         if num_rows_to_add < 0:
             card_observation = card_observation[:self.max_cards]
-        return {
+        
+        obs = {
             'game': np.array(observation[0]),
             'card': card_observation
         }
+        return self._apply_mapping(obs)
     def reset(self):
         hp = random.randint(10,30)
         total_turn = random.randint(5,11)
@@ -62,9 +78,13 @@ class GakuenIdolMasterEnv(gym.Env):
         #print(action)
         # 重复动作惩罚
         reward = 0
+        action = self.random_mapping[action]
         for i in range(len(self.last_steps)-1, -1, -1):
+            cnt = 0
             if action == self.last_steps[i]:
-                reward -= 4
+                cnt +=1
+                if cnt >= 2:
+                    reward -= 5
             else :
                 break
         self.last_steps.pop(0)
@@ -77,14 +97,18 @@ class GakuenIdolMasterEnv(gym.Env):
         self.game.play(action)
         self.game.end_round()
         done = self.game.is_over
+        self.game.score = min(self.game.score, self.game.target)
         reward += self.game.score - self.current_score
         if done:
             # 打牌类型的多样性给予奖励
             reward += len(set(self.last_steps)) * 10
             if self.game.score >= self.game.target:
-                reward += 100
-                reward += self.game.hp *1
-                reward += self.game.turn_left * 10
+                reward += 200
+                reward += self.game.hp *10
+                reward += self.game.turn_left * 40
+            reward += self.game.good_impression * 10
+            reward += self.game.robust * 3
+                #reward += self.game.best_condition * 20
         self.current_score = self.game.score
         self.game.start_round()
         return self._get_obs(), reward, done, {}

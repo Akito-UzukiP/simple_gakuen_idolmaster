@@ -1,7 +1,7 @@
-import effects
+from . import effects
 import random
 import numpy as np
-from cards import create_card, Card, create_random_ktn_deck
+from .cards import create_card, Card, create_random_ktn_deck
 class Game:
     def __init__(self, hp = 30, total_turn = 6, target = 60):
         self.hp = hp
@@ -32,6 +32,10 @@ class Game:
         self.current_turn = 0
 
         self.playable_cnt = 1
+
+
+        # 
+
 
         self.score = 0
         self.target = target

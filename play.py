@@ -1,6 +1,6 @@
 # 游戏流程
-import cards
-from game import Game
+import utils.cards as cards
+from utils.game import Game
 game = Game(hp=31, total_turn=8, target=60)
 game.deck = cards.create_random_ktn_deck()
 game.shuffle()
