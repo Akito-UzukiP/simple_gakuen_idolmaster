@@ -15,7 +15,8 @@ def score(game, num):
     game.score += num
 
 def robust(game, num):
-    game.robust += num + game.motivation
+    if num > 0:
+        game.robust += num + game.motivation
 def good_impression(game, num):
     game.good_impression += num
 def good_condition(game, num):
@@ -88,6 +89,11 @@ def end_turn(game):
         game.best_condition -= 1
     if game.good_impression > 0:
         game.good_impression -= 1
+    if game.hp_damage_increase > 0:
+        game.hp_damage_increase -= 1
+    if game.hp_damage_decrease > 0:
+        game.hp_damage_decrease -= 1
+    
 
 def effect_roll(effects: list[int], game):
     ''' 效果轮

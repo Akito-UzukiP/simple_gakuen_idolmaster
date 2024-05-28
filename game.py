@@ -73,9 +73,9 @@ class Game:
         string += 'やる気: ' + str(self.motivation) + ', ' 
         string += 'スコア: ' + str(self.score) + '\n'
         string += '手牌: ' + str(self.hand) + '\n'
-        string += '牌组: ' + str(self.deck) + '\n'
-        string += '弃牌堆: ' + str(self.discard) + '\n'
-        string += '除外: ' + str(self.exile)
+        # string += '牌组: ' + str(self.deck) + '\n'
+        # string += '弃牌堆: ' + str(self.discard) + '\n'
+        # string += '除外: ' + str(self.exile)
         return string
     def __repr__(self) -> str:
         return self.__str__()
@@ -114,6 +114,14 @@ class Game:
         new_game.discard = self.discard.copy()
         new_game.exile = self.exile.copy()
         new_game.effects = self.effects.copy()
+        new_game.hp_damage_increase = self.hp_damage_increase
+        new_game.hp_damage_decrease = self.hp_damage_decrease
+        new_game.hp_damage_decrease_direct = self.hp_damage_decrease_direct
+        new_game.additional_draw = self.additional_draw
+        new_game.rest = self.rest
+        new_game.target = self.target
+        new_game.init_hp = self.init_hp
+        new_game.init_turn = self.init_turn
         return new_game
 
     def check_playable(self, card_idx):
@@ -128,20 +136,32 @@ class Game:
         new_game = self.deep_copy()
         new_game.play(card_idx)
         if new_game.hp < 0:
+            #print("Unable to play card: HP < 0")
             return False
         if new_game.robust < 0:
+            #print("Unable to play card: Robust < 0")
             return False
         if new_game.good_impression < 0:
+            #print("Unable to play card: Good Impression < 0")
             return False
         if new_game.good_condition < 0:
+            #print("Unable to play card: Good Condition < 0")
             return False
         if new_game.best_condition < 0:
+            #print("Unable to play card: Best Condition < 0")
             return False
         if new_game.motivation < 0:
+            #print("Unable to play card: Motivation < 0")
             return False    
 
 
         return True
+    
+    def check_score(self, card_idx):
+        # 检查如果打出这张牌，分数会增加多少
+        new_game = self.deep_copy()
+        new_game.play(card_idx)
+        return new_game.score - self.score
 
     def play(self, card_idx):
         effects.effect_roll(self.hand[card_idx].effects, self)
@@ -159,6 +179,7 @@ class Game:
 
     def start_round(self):
         # 处理第一回合必上手的卡
+        self.hand.append(self.rest)
         cnt = 0
         determined_card = []
         if self.current_turn == 0:
@@ -171,7 +192,6 @@ class Game:
             self.hand.append(self.deck.pop(i))
             
         self.draw(max(3-cnt, 0))
-        self.hand.append(self.rest)
         self.playable_cnt = 1
 
     def shuffle(self):
@@ -209,8 +229,14 @@ class Game:
         self.turn_left = self.init_turn
         self.current_turn = 0
         self.is_over = False
+        self.hp_damage_decrease = 0
+        self.hp_damage_increase = 0
+        self.hp_damage_decrease_direct = 0
+        self.playable_cnt = 1
+        self.additional_draw = 0
         if self.rest in self.hand:
-            self.hand.remove(self.rest)        
+            while self.rest in self.hand:
+                self.hand.remove(self.rest)
         self.shuffle()
 
     def observe(self):
@@ -235,6 +261,7 @@ class Game:
             else:
                 tmp = [-1]
             tmp.extend(card.observe())
+            tmp.append(self.check_score(self.hand.index(card)))
             card_observation.append(tmp)
         # 仅观察手牌
         # for card in self.deck:

@@ -71,48 +71,48 @@ def create_card(name, cost=0, direct_cost=0, robust=0, motivation=0, good_impres
 # 以下是卡片的具体效果
 # アピールの基本
 # cost4, score9
-appeal_basic = create_card('アピールの基本', cost = 4, score = 9)
+appeal_basic = create_card('アピールの基本', cost = 4, score = 9, upgrade_cost=-1, upgrade_score=5)
 # ポーズの基本
 #cost3, score2, robust2
-pose_basic = create_card('ポーズの基本', cost = 3, score = 2, robust = 2)
+pose_basic = create_card('ポーズの基本', cost = 3, score = 2, robust = 2, upgrade_score=4, upgrade_robust=2)
 #表現の基本
 #cost0, robust4, exile
-expression_basic = create_card('表現の基本', robust = 4, exile = True)
+expression_basic = create_card('表現の基本', robust = 4, exile = True, upgrade_robust=3)
 # 目線の基本
 # cost2, good_impression2
-eye_contact_basic = create_card('目線の基本', cost = 2, good_impression = 2)
+eye_contact_basic = create_card('目線の基本', cost = 2, good_impression = 2, robust=1, upgrade_good_impression=1, upgrade_robust=1)
 # 
 # 可愛い仕草
 # cost5, good_impression2, score_good_imporession1.0
-cute_gesture = create_card('可愛い仕草', cost = 5, good_impression = 2, score_good_impression_percent = 1.0, exile = True)
+cute_gesture = create_card('可愛い仕草', cost = 5, good_impression = 2, score_good_impression_percent = 1.0, exile = True, upgrade_good_impression=1, upgrade_score_good_impression_percent=0.2)
 
 # 気分転換
 # direct_cost5, score_robust_percent1.0, exile
-change_of_mood = create_card('気分転換', direct_cost = 5, score_robust_percent = 1.0, exile = True)
+change_of_mood = create_card('気分転換', direct_cost = 5, score_robust_percent = 1.0, exile = True, upgrade_direct_cost=-2, upgrade_score_robust_percent=0.1)
 
 # 振る舞いの基本
 # cost1, good_condition2, robust1
-behavior_basic = create_card('振る舞いの基本', cost = 1, good_condition = 2, robust = 1)
+behavior_basic = create_card('振る舞いの基本', cost = 1, good_condition = 2, robust = 1, upgrade_good_condition=1)
 
 # 意識の基本
 # cost2, motivation2, robust1
-consciousness_basic = create_card('意識の基本', cost = 2, motivation = 2, robust = 1)
+consciousness_basic = create_card('意識の基本', cost = 2, motivation = 2, robust = 1, upgrade_motivation=1, upgrade_robust=1)
 
 # 200%スマイル
 # cost6 good_impression5, score_good_impression_percent1.0
-smile_200 = create_card('200%スマイル', cost = 6, good_impression = 5, score_good_impression_percent = 1.0)
+smile_200 = create_card('200%スマイル', cost = 6, good_impression = 5, score_good_impression_percent = 1.0, upgrade_good_impression=1, upgrade_score_good_impression_percent=0.7)
 
 # ふれあい
 # cost5, good_impression4, robust3, exile
-touch = create_card('ふれあい', cost = 5, good_impression = 4, robust = 3, exile = True)
+touch = create_card('ふれあい', cost = 5, good_impression = 4, robust = 3, exile = True, upgrade_good_impression=1, upgrade_robust=3)
 
 # ラブリーウインク
 # cost5, good_impression4, score_good_impression_percent0.6
-lovely_wink = create_card('ラブリーウインク', cost = 5, good_impression = 4, score_good_impression_percent = 0.6, upgrade_score_good_impression_percent=0.2)
+lovely_wink = create_card('ラブリーウインク', cost = 5, good_impression = 4, score_good_impression_percent = 0.6, upgrade_score_good_impression_percent=0.2, upgrade_good_impression=1)
 
 # リズミカル
 # cost0, robust6
-rhythmic = create_card('リズミカル', robust = 6)
+rhythmic = create_card('リズミカル', robust = 6, upgrade_robust=2, exile=True)
 
 #　幸せな時間
 # cost5, good_impression6
@@ -120,7 +120,7 @@ happy_time = create_card('幸せな時間', cost = 5, good_impression = 6, upgra
 
 # リスタート
 # cost4, good_impression3
-restart = create_card('リスタート', cost = 4, good_impression = 3)
+restart = create_card('リスタート', cost = 4, good_impression = 3, robust=2, upgrade_good_impression=1, upgrade_cost=-1)
 
 # キラメキ
 # cost3, score_good_impression_percent2.0, 体力消耗增加2turn (WIP)
@@ -131,11 +131,27 @@ honbanzenya = create_card('本番前夜', cost = 5, good_impression = 4, motivat
 
 # 私がスター
 # cost0, good_impression-1, additional_turn1, additional_playable1, 升级 additional_draw1
-watashi_ga_star = create_card('私がスター', good_impression = -1, additional_turn = 1, additional_playable = 1, upgrade_additional_draw = 1)
+watashi_ga_star = create_card('私がスター', good_impression = -1, additional_turn = 1, additional_playable = 1, upgrade_additional_draw = 1, limit=True)
 
 # 手拍子
 # cost5, score_good_impression_percent1.5, upgrade_score_good_impression_percent0.5, exile
 clap = create_card('手拍子', cost = 5, score_good_impression_percent = 1.5, upgrade_score_good_impression_percent=0.5, exile=True)
+
+# やる気は満点
+# cost1, robust1, good_impression4, exile, upgrade_good_impression1, upgrade_robust1
+good_condition = create_card('やる気は満点', cost = 1, robust = 1, good_impression = 4, exile = True, upgrade_good_impression=1, upgrade_robust=1)
+
+# アイドル宣言
+# direct_cost1, additional_playable1, additional_draw2, upgrade_direct_cost-1, upgrade_hp_damage_decrease1
+idol_declaration = create_card('アイドル宣言', direct_cost = 1, additional_playable = 1, additional_draw = 2, upgrade_direct_cost=-1, upgrade_hp_damage_decrease=1, limit=True,exile=True)
+
+# テレビ出演
+# cost1, robust3, hp_damage_decrease4, upgrade_robust2, upgrade_hp_damage_decrease1, limit, exile
+tv_show = create_card('テレビ出演', cost = 1, robust = 3, hp_damage_decrease = 4, upgrade_robust=2, upgrade_hp_damage_decrease=1, limit=True,exile=True)
+
+# 星屑センセーション
+# motivation-3,good_impression5, additional_playable1, upgrade_good_impression2, upgrade_additional_draw1, limit, exile
+# stardust_sensation = create_card('星屑センセーション', motivation = -3, good_impression = 5, additional_playable = 1, upgrade_good_impression=2, upgrade_additional_draw=1, limit=True,exile=True) 
 
 # 休憩
 # cost-2
@@ -156,7 +172,8 @@ def create_ktn_deck():
 # 多次触发加分
 # 
 
-all_cards = [clap, appeal_basic, pose_basic, expression_basic, eye_contact_basic, cute_gesture, change_of_mood, behavior_basic, consciousness_basic, smile_200, touch, lovely_wink, rhythmic, happy_time, restart, kirameki, honbanzenya, watashi_ga_star, ktn_ssr]
+#all_cards = [clap, appeal_basic, pose_basic, expression_basic, eye_contact_basic, cute_gesture, change_of_mood, behavior_basic, consciousness_basic, smile_200, touch, lovely_wink, rhythmic, happy_time, restart, kirameki, honbanzenya, watashi_ga_star, ktn_ssr]
+all_cards = [clap, appeal_basic, pose_basic, expression_basic, eye_contact_basic, cute_gesture, change_of_mood, behavior_basic, consciousness_basic, smile_200, touch, lovely_wink, rhythmic, happy_time, restart, kirameki, honbanzenya, watashi_ga_star, idol_declaration, tv_show, good_condition, rest]
 upgraded_cards = [card.upgrade() for card in all_cards]
 
 # 随机ktn卡组，包含基础ktn卡组加上15张随机卡，其中有5张升级卡，limit卡仅能有一张
