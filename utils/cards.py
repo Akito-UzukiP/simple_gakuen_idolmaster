@@ -1,5 +1,6 @@
 # 卡片基础类，包含卡片的基础攻击力 attack和cost
 import numpy as np
+import copy
 class Card:
     def __init__(self, name, effects: list[int], upgrade_effects: list[int], exile=False, upgraded=False, limit=False, first=False):
         self.name = name
@@ -47,12 +48,13 @@ class Card:
         return self.__str__()
 
     def upgrade(self):
-        new_card = Card(self.name, self.effects, self.upgrade_effects, self.exile, True, self.limit, self.first)
+        # 使用深拷贝确保创建的新卡牌独立于原始卡牌
+        import copy
+        new_card = copy.deepcopy(self)
         for i in range(len(new_card.effects)):
-            new_card.effects[i] = self.effects[i] + self.upgrade_effects[i]
-            new_card.upgraded = True
+            new_card.effects[i] += self.upgrade_effects[i]
+        new_card.upgraded = True
         return new_card
-
     def observe(self):
         # 将卡片的效果转化为可微的数值
         observation = []
@@ -135,7 +137,7 @@ restart = create_card('リスタート', cost = 4, good_impression = 3, robust=2
 kirameki = create_card('キラメキ', cost = 3, score_good_impression_percent = 2.0, hp_damage_increase = 2, upgrade_score_good_impression_percent=0.5)
 # 本番前夜
 # cost5, good_impression4, motivation3, 升级++1，开局必得
-honbanzenya = create_card('本番前夜', cost = 5, good_impression = 4, motivation = 3, upgrade_good_impression = 1, upgrade_motivation=1,first = True)
+honbanzenya = create_card('本番前夜', cost = 5, good_impression = 4, motivation = 3, upgrade_good_impression = 1, upgrade_motivation=1,first = True, exile=True)
 
 # 私がスター
 # cost0, good_impression-1, additional_turn1, additional_playable1, 升级 additional_draw1
@@ -173,7 +175,7 @@ rest = create_card('休憩', cost = -2, limit = True)
 ktn_ssr = create_card('よそ見はだめ♪', cost = 6, good_impression = 7, exile = True, upgrade_good_impression=2, upgrade_robust=2, limit = True)
 
 def create_ktn_deck():
-    return [appeal_basic]*2 + [pose_basic]*1 + [expression_basic]*2 + [eye_contact_basic]*2 + [cute_gesture]*1 + [ktn_ssr]*1
+    return [appeal_basic]*2 + [pose_basic]*1 + [expression_basic]*2 + [eye_contact_basic]*2 + [cute_gesture]*1 + [ktn_ssr.upgrade()]*1
 
 
 # 特殊效果：
@@ -186,24 +188,33 @@ upgraded_cards = [card.upgrade() for card in all_cards]
 
 # 随机ktn卡组，包含基础ktn卡组加上15张随机卡，其中有5张升级卡，limit卡仅能有一张
 import random
-def create_random_ktn_deck():
+def create_random_ktn_deck(total_cards_cnt = 30, upgraded_cards_cnt = 5):
     deck = create_ktn_deck()
-    for i in range(10):
-        card = random.choice(all_cards)
-        if card.limit and all_cards[i] not in deck and upgraded_cards[i] not in deck:
-            #print(card)
-            while card in deck:
-                card = random.choice(all_cards)
+    for i in range(total_cards_cnt - len(deck) - upgraded_cards_cnt):
+        while True:
+            card = random.choice(all_cards)
+            if card.limit:
+                if card not in deck:
+                    break
+            else:
+                break
         deck.append(card)
-    for i in range(5):
-        card = random.choice(upgraded_cards)
-        if card.limit and all_cards[i] not in deck and upgraded_cards[i] not in deck:
-            #print(card)
-            while card in deck:
-                card = random.choice(upgraded_cards)
-        deck.append(card)
+    # for i in range(upgraded_cards_cnt):
+    #     #card = random.choice(upgraded_cards)
+    #     while True:
+    #         card = random.choice(upgraded_cards)
+    #         if card.limit:
+    #             if card not in deck:
+    #                 break
+    #         else:
+    #             break
+    #     print(card)
+    #     deck.append(card)
     return deck
+
+my_best_deck = create_ktn_deck() + [kirameki.upgrade(), happy_time, happy_time,lovely_wink,restart,happy_time,lovely_wink,rhythmic,smile_200.upgrade(), touch, lovely_wink, watashi_ga_star.upgrade(), lovely_wink, touch, honbanzenya.upgrade(), lovely_wink, touch, happy_time.upgrade()]
+
 if __name__ == "__main__":
     print("-------------------")
-    print(create_random_ktn_deck())
+    print(all_cards)
     #print(create_card('ラブリーウインク', cost = 5, good_impression = 4, score_good_impression_percent = 0.6, upgrade_score_good_impression_percent=0.2).upgrade())

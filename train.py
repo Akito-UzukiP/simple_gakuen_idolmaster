@@ -23,18 +23,18 @@ env = make_vec_env(GakuenIdolMasterEnv, n_envs=40)
 #     n_steps=2048,  # 设置n_steps
 #     batch_size=8192  # 调整批量大小，使其成为 n_steps * n_envs 的因数
 # )
-model = DQN(
-    "MultiInputPolicy",
-    env,
-    verbose=1,
-    tensorboard_log="./log",
-    device=get_device(),
-    policy_kwargs=policy_kwargs,
-    batch_size=1024,  # 调整批量大小，使其成为 n_steps * n_envs 的因数
-    exploration_final_eps=0.05,
-)
+# model = DQN(
+#     "MultiInputPolicy",
+#     env,
+#     verbose=1,
+#     tensorboard_log="./log",
+#     device=get_device(),
+#     policy_kwargs=policy_kwargs,
+#     batch_size=1024,  # 调整批量大小，使其成为 n_steps * n_envs 的因数
+#     exploration_final_eps=0.05,
+# )
 
-# model = DQN.load("dqn_gakuen_idol_master", device=get_device(), env=env, force_reset=True)
+model = DQN.load("./models/dqn_gakuen_idol_master", device=get_device(), env=env, force_reset=True)
 # model.exploration_fraction = 0
 # model.exploration_initial_eps = 0.05
 # model.exploration_final_eps = 0.05
@@ -49,7 +49,7 @@ model = DQN(
 
 # 开始训练并使用回调函数保存检查点
 if __name__ == "__main__":
-    model.learn(total_timesteps=4096000, log_interval=1, reset_num_timesteps=False)
+    model.learn(total_timesteps=8192000, log_interval=1, reset_num_timesteps=False)
 
     # 手动保存模型（可选）
     model.save("dqn_gakuen_idol_master")

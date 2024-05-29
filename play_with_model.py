@@ -5,6 +5,7 @@ from stable_baselines3.common.utils import get_device
 from utils.env import GakuenIdolMasterEnv
 from utils.agent import CardTransformer, CustomExtractor
 from utils import agent
+from utils import cards
 import torch
 def update_environment(env, action):
     obs, reward, done, info = env.step(action)
@@ -19,19 +20,19 @@ def predict_action(model, obs):
 env = GakuenIdolMasterEnv()
 model = DQN.load("models/dqn_gakuen_idol_master", device='cpu', env=env)
 
-
-obs = env.reset()
+env.reset( )
+print(env.game)
+obs = env._get_obs()
 done = False
 total_rewards = 0
-print(env.game)
 cnt = 0
 while not done:
     # 使用模型进行预测
     action = predict_action(model, obs)
 
-    if env.random_mapping[action] >= len(env.game.hand):
+    if action >= len(env.game.hand):
         break
-    print(env.game.hand[env.random_mapping[action]])
+    print(env.game.hand[action])
     # 使用环境进行更新
     obs, reward, done, info = update_environment(env, action)
     

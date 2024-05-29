@@ -4,11 +4,11 @@ import torch.nn.functional as F
 from torch.distributions.categorical import Categorical
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 class CardTransformer(nn.Module):
-    def __init__(self,card_feature_dim, player_feature_dim, max_cards = 8, d_model=128, nhead=8, num_layers=2):
+    def __init__(self,card_feature_dim, player_feature_dim, max_deck = 35 , d_model=128, nhead=8, num_layers=2):
         super(CardTransformer, self).__init__()
         self.card_embedding = nn.Linear(card_feature_dim, d_model)
         self.player_embedding = nn.Linear(player_feature_dim, d_model)
-        self.max_cards = max_cards
+        self.max_deck = max_deck
         # 自注意力
         self.transformer = nn.Transformer(d_model=d_model, nhead=nhead, num_encoder_layers=num_layers, batch_first=True)
         # 输出层
@@ -21,9 +21,9 @@ class CardTransformer(nn.Module):
 
     def forward(self, x_cards, x_player):
         x_cards = self.card_embedding(x_cards)
-        # 将x_cards补全到max_cards，补全采用[-2] + [0] * (x_cards.size(-1) - 1)的方式
-        if x_cards.size(1) < self.max_cards:
-            padding = torch.zeros(x_cards.size(0), self.max_cards - x_cards.size(1), x_cards.size(-1)).to(x_cards.device)
+        # 将x_cards补全到max_deck，补全采用[-2] + [0] * (x_cards.size(-1) - 1)的方式
+        if x_cards.size(1) < self.max_deck:
+            padding = torch.zeros(x_cards.size(0), self.max_deck - x_cards.size(1), x_cards.size(-1)).to(x_cards.device)
             padding[:, :, 0] = -2
             x_cards = torch.cat([x_cards, padding], dim=1)
         x_player = self.player_embedding(x_player)
@@ -37,16 +37,16 @@ class CardTransformer(nn.Module):
     
 
 class CardMLP(nn.Module):
-    def __init__(self, card_feature_dim, player_feature_dim, max_cards = 8, d_model=128):
+    def __init__(self, card_feature_dim, player_feature_dim, max_deck = 35, d_model=128):
         super(CardMLP, self).__init__()
-        self.card_embedding = nn.Linear(card_feature_dim, d_model)
+        self.card_embedding = nn.Linear(card_feature_dim, int(d_model/4))
         self.player_embedding = nn.Linear(player_feature_dim, d_model)
-        self.position_embedding = nn.Embedding(max_cards, d_model)
-        self.max_cards = max_cards
+        self.position_embedding = nn.Embedding(max_deck, int(d_model/4))
+        self.max_deck = max_deck
         self.mlp = nn.Sequential(
-            nn.Linear(d_model*self.max_cards, d_model),
+            nn.Linear(int(d_model*self.max_deck/4), int(d_model*2)),
             nn.ReLU(),
-            nn.Linear(d_model, d_model),
+            nn.Linear(int(d_model*2), d_model),
             nn.Dropout(0.1),
             nn.ReLU())
     def forward(self, x_cards, x_player):
@@ -79,7 +79,7 @@ class CustomExtractor(BaseFeaturesExtractor):
     #     return card
     
 if __name__ == "__main__":
-    card = torch.randn(5, 8, 20)
+    card = torch.randn(5, 35, 20)
     game = torch.randn(5, 13)
     model = CustomExtractor(None, 128)
     print(model({'game':game, 'card':card}).shape)

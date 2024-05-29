@@ -1,8 +1,12 @@
 import gym
 from gym import spaces
 import numpy as np
-from .game import Game
-from . import cards
+try:
+    from .game import Game
+    from . import cards
+except:
+    from game import Game
+    import cards
 import random
 class GakuenIdolMasterEnv(gym.Env):
     def __init__(self):
@@ -14,8 +18,10 @@ class GakuenIdolMasterEnv(gym.Env):
         self.game.start_round()
         
         # 动作空间：选择手牌中的一张卡
-        self.max_cards = 8
-        self.action_space = spaces.Discrete(self.max_cards)
+        self.max_cards = 35
+        self.max_hand_cards = 8
+
+        self.action_space = spaces.Discrete(self.max_hand_cards)
         #print(self.max_cards)
         # 观察空间
         self.env_shape = self.game.observe()[0].shape[0]
@@ -30,11 +36,11 @@ class GakuenIdolMasterEnv(gym.Env):
         self.last_steps = [-1] * self.game.init_turn
 
         # 随机mapping，将0-7映射到0-7，打乱排序，防止模型记住顺序
-        self.random_mapping = np.arange(self.max_cards)
-        self._shuffle_mapping()
-        
-    def _shuffle_mapping(self):
-        np.random.shuffle(self.random_mapping)
+        self.use_random_mapping = False
+        if self.use_random_mapping:
+            self.random_mapping = np.arange(self.max_cards)
+            np.random.shuffle(self.random_mapping)()
+
     def _apply_mapping(self, observation):
         mapped_cards = observation['card'][self.random_mapping]
         return {
@@ -47,7 +53,7 @@ class GakuenIdolMasterEnv(gym.Env):
         return [seed]
     def _get_obs(self):
         observation = self.game.observe()
-        # observation[1]要补到self.max_cards，用[-1] + [0]*18
+        # observation[1]要补到self.max_cards，用[-1] + [0]*19
         card_observation = np.array(observation[1])
         num_rows_to_add = self.max_cards - observation[1].shape[0]
         if num_rows_to_add > 0:
@@ -60,13 +66,15 @@ class GakuenIdolMasterEnv(gym.Env):
             'game': np.array(observation[0]),
             'card': card_observation
         }
-        return self._apply_mapping(obs)
+        return self._apply_mapping(obs) if self.use_random_mapping else obs
     def reset(self):
         hp = random.randint(10,30)
         total_turn = random.randint(5,11)
         target = random.randint(total_turn*10, total_turn*20)
         self.game = Game(hp=hp, total_turn=total_turn, target=target)
-        self.game.deck = cards.create_random_ktn_deck()
+        total_cards = random.randint(20,34)
+        upgraded_cards = random.randint(0, total_cards-9)
+        self.game.deck = cards.create_random_ktn_deck(total_cards, upgraded_cards)
         #print(self.game.observe())
         self.game.start_round()
         self.current_score = 0
@@ -78,7 +86,7 @@ class GakuenIdolMasterEnv(gym.Env):
         #print(action)
         # 重复动作惩罚
         reward = 0
-        action = self.random_mapping[action]
+        action = self.random_mapping[action] if self.use_random_mapping else action
         for i in range(len(self.last_steps)-1, -1, -1):
             cnt = 0
             if action == self.last_steps[i]:
@@ -93,7 +101,7 @@ class GakuenIdolMasterEnv(gym.Env):
         if not self.game.check_playable(action):
             #print("无效动作")
             # 找到第一个可打出的牌
-            return self._get_obs(), -50, True, {}
+            return self._get_obs(), -50 + self.game.current_turn*5, True, {}
         self.game.play(action)
         self.game.end_round()
         done = self.game.is_over

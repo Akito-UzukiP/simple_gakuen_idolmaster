@@ -1,7 +1,12 @@
-from . import effects
+try:
+    from .cards import create_card, Card, create_random_ktn_deck
+    from . import effects
+except:
+    from cards import create_card, Card, create_random_ktn_deck
+    import effects
+import copy
 import random
 import numpy as np
-from .cards import create_card, Card, create_random_ktn_deck
 class Game:
     def __init__(self, hp = 30, total_turn = 6, target = 60):
         self.hp = hp
@@ -96,6 +101,7 @@ class Game:
                 random.shuffle(self.deck)
             if len(self.deck) == 0:
                 return
+            random.shuffle(self.deck)
             self.hand.append(self.deck.pop())
             
     def deep_copy(self):
@@ -268,18 +274,21 @@ class Game:
             tmp.append(self.check_score(self.hand.index(card)))
             card_observation.append(tmp)
         # 仅观察手牌
-        # for card in self.deck:
-        #     tmp = [1]
-        #     tmp.extend(card.observe())
-        #     card_observation.append(tmp)
-        # for card in self.discard:
-        #     tmp = [2]
-        #     tmp.extend(card.observe())
-        #     card_observation.append(tmp)
-        # for card in self.exile:
-        #     tmp = [3]
-        #     tmp.extend(card.observe())
-        #     card_observation.append(tmp)
+        for card in self.deck:
+            tmp = [1]
+            tmp.extend(card.observe())
+            tmp.append(0)
+            card_observation.append(tmp)
+        for card in self.discard:
+            tmp = [2]
+            tmp.extend(card.observe())
+            tmp.append(0)
+            card_observation.append(tmp)
+        for card in self.exile:
+            tmp = [3]
+            tmp.extend(card.observe())
+            tmp.append(0)
+            card_observation.append(tmp)
         observation = np.array(observation, dtype=np.float32)
         card_observation = np.array(card_observation, dtype=np.float32)
         return observation, card_observation
