@@ -38,6 +38,7 @@ class Card:
         self.specialEffects = [0]*45 # trigger后的效果
         self.needTriggerToPlay = False
 
+        self.upgradeCard = None
     def __str__(self):
         name = self.name
         rarity = self.rarity
@@ -56,7 +57,7 @@ class Card:
             # ExamCostType_ExamParameterBuff -> 好調
             # ExamCostType_Unknown -> 无
             return_text += f"额外消耗: {costValue} {cost_classes[costType]}\n"
-        return return_text
+        return name
 
     def __repr__(self):
         return self.__str__()
@@ -76,8 +77,8 @@ def read_card(card_json:dict):
         card.descriptions += desc.get('text').replace("<nobr>"," ").replace("</nobr>"," ").replace("\\n","") + " "
     card.planType = card_json.get('planType')
     card.category = card_json.get('category')
-    card.playEffects = [0]*45
-    card.specialEffects = [0]*45
+    card.playEffects = [0]*44
+    card.specialEffects = [0]*44
     for effect in card_json.get('playEffects'):
         if effect.get("produceExamTriggerId"):
             card.specialEffects = [a + b for a, b in zip(card.specialEffects, match_all_effects(effect.get("produceExamEffectId")))]
@@ -85,6 +86,12 @@ def read_card(card_json:dict):
             card.playEffects = [a + b for a, b in zip(card.playEffects, match_all_effects(effect.get("produceExamEffectId")))]
     return card
 
+
+def find_upgrade_card(card:Card, all_cards):
+    for c in all_cards:
+        if c.name == card.name + "+":
+            return c
+    return None
 
 
 if __name__ == "__main__":
@@ -94,4 +101,11 @@ if __name__ == "__main__":
         data = yaml.load(f, Loader=yaml.FullLoader)
     for card in data:
         all_cards.append(read_card(card))
-    print(all_cards)
+    all_upgrade_cards = []
+    for card in all_cards:
+        upgrade_card = find_upgrade_card(card, all_cards)
+        card.upgradeCard = upgrade_card
+    for card in all_cards:
+        print(card)
+        print(card.upgradeCard)
+        print()
