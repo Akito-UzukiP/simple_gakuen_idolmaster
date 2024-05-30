@@ -3,6 +3,10 @@
 模拟ことね的卡组以及学马仕游戏模式，并使用强化学习进行让KTN自己玩自己的卡组。
 (WIP)
 
+ことね育成玩具可以运行，全量游戏功能还在开发中。
+可用的强化学习模型:
+[DQN](https://huggingface.co/AkitoP/simple_gakuen_idolmaster_dpo) - 放入models/下即可使用
+
 ## play.py
 直接自己玩，用于测试系统是否正常工作。
 
