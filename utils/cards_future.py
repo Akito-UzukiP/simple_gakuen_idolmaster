@@ -1,8 +1,8 @@
 import numpy as np
 try:
-    from .effects_future import match_all_effects
+    from . import triggers_future, effects_future
 except:
-    from effects_future import match_all_effects
+    import triggers_future, effects_future
 category_types = {
     "ProduceCardCategory_MentalSkill": "支援",
     "ProduceCardCategory_ActiveSkill": "主动",
@@ -23,6 +23,7 @@ cost_classes = {
 
 class Card:
     def __init__(self):
+        self.id = ""
         self.name = ""
         self.rarity = ""
         self.stamina = 0
@@ -33,10 +34,19 @@ class Card:
         self.planType = ""
         self.category = ""
 
-        self.playEffects = [0]*45
-        self.trigger = [0]*8 # 8种trigger
-        self.specialEffects = [0]*45 # trigger后的效果
-        self.needTriggerToPlay = False
+
+        self.noDeckDuplication = False
+        self.isLimited = False
+        self.isInitialDeckProduceCard = False
+        self.isRestrict = False
+        self.isInitial = False
+        self.isEndTurnLost = False
+
+        self.playMovePositionType = "" # 打出后该去墓地还是弃牌堆
+
+        self.playableTrigger = [0] * len(triggers_future.start_turn_trigger)
+
+        self.playEffects = []
 
         self.upgradeCard = None
     def __str__(self):
@@ -77,13 +87,16 @@ def read_card(card_json:dict):
         card.descriptions += desc.get('text').replace("<nobr>"," ").replace("</nobr>"," ").replace("\\n","") + " "
     card.planType = card_json.get('planType')
     card.category = card_json.get('category')
-    card.playEffects = [0]*44
-    card.specialEffects = [0]*44
-    for effect in card_json.get('playEffects'):
-        if effect.get("produceExamTriggerId"):
-            card.specialEffects = [a + b for a, b in zip(card.specialEffects, match_all_effects(effect.get("produceExamEffectId")))]
-        elif effect.get("produceExamEffectId"):
-            card.playEffects = [a + b for a, b in zip(card.playEffects, match_all_effects(effect.get("produceExamEffectId")))]
+
+    card.noDeckDuplication = card_json.get('noDeckDuplication')
+    card.isLimited = card_json.get('isLimited')
+    card.isInitialDeckProduceCard = card_json.get('isInitialDeckProduceCard')
+    card.isRestrict = card_json.get('isRestrict')
+    card.isInitial = card_json.get('isInitial')
+    card.isEndTurnLost = card_json.get('isEndTurnLost')
+
+    card.playEffects = effects_future.read_effect_of_card(card_json)
+
     return card
 
 
@@ -109,3 +122,5 @@ if __name__ == "__main__":
         print(card)
         print(card.upgradeCard)
         print()
+
+# id,upgradeCount,name,assetId,isCharacterAsset,rarity,planType,category,stamina,forceStamina,costType,costValue,playProduceExamTriggerId,playEffects,playMovePositionType,moveEffectTriggerType,moveProduceExamEffectIds,isEndTurnLost,isInitial,isRestrict,produceCardStatusEnchantId,searchTag,libraryHidden,noDeckDuplication,descriptions,unlockProducerLevel,rentalUnlockProducerLevel,evaluation,originIdolCardId,originSupportCardId,isInitialDeckProduceCard,effectGroupIds,viewStartTime,isLimited,order

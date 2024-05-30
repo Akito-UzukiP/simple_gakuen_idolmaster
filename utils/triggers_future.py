@@ -12,7 +12,7 @@
 # e_trigger-exam_start_turn-stamina_up_multiple-500
 # e_trigger-exam_start_turn-turn_progress_up-3
 import re
-trigger_classes = {
+card_play_trigger = {
     "e_trigger-exam_card_play-card_play_aggressive_up-3",
     "e_trigger-exam_card_play-card_play_aggressive_up-6",
     "e_trigger-exam_card_play-lesson_buff_up-3",
@@ -21,9 +21,21 @@ trigger_classes = {
     "e_trigger-exam_card_play-review_up-1",
     "e_trigger-exam_card_play-review_up-3",
     "e_trigger-exam_card_play-stamina_up_multiple-500",
+}
+start_turn_trigger = {
     "e_trigger-exam_start_turn-condition_threshold_multiple_down-1000",
     "e_trigger-exam_start_turn-no_block",
     "e_trigger-exam_start_turn-parameter_buff",
     "e_trigger-exam_start_turn-stamina_up_multiple-500",
     "e_trigger-exam_start_turn-turn_progress_up-3"
 }
+
+def match_all_triggers_exam_card(text):
+    '''
+    返回one-hot编码的触发器
+    '''
+    trigger = [0] * len(card_play_trigger)
+    for i, trig in enumerate(card_play_trigger):
+        if re.search(trig, text):
+            trigger[i] = 1
+    return trigger

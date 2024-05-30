@@ -1,5 +1,6 @@
 import random
 import numpy as np
+import math
 class Game:
     '''
     Game类,用于描述游戏状态
@@ -44,6 +45,7 @@ class Game:
         self.parameter_buff = 0
         self.parameter_buff_multiple_per_turn = 0
 
+        self.card_draw = 3
         self.playable_value = 1
 
         self.stamina_consumption_add = 0
@@ -82,17 +84,58 @@ class Game:
                 return
             random.shuffle(self.deck)
             self.hand.append(self.deck.pop())
-    
-    def start_turn():
+
+    def lesson_add(self, num):
+        '''
+        加分
+        '''
+        if self.lesson_buff > 0:
+            num += self.lesson_buff
+        mul = 1.0
+        if self.parameter_buff > 0:
+            mul += 0.5
+        if self.parameter_buff_multiple_per_turn > 0:
+            mul += self.parameter_buff * 0.1
+        num = math.ceil(num * mul)
+        self.lesson += num
+
+    def lesson_add_depend(self, percent, depend = "block", reduce = 0000):
+        '''
+        加分，比例依赖，由于仅logic所以不用管lesson_buff和parameter_buff
+        '''
+        if depend == "block":
+            num = self.block * percent
+        elif depend == "stamina":
+            num = self.stamina * percent
+        elif depend == "review":
+            num = self.review * percent
+        if reduce > 0:
+            self.block *= (1-reduce)
+        self.lesson += num
+
+    def start_turn(self):
         '''
         开始回合
         1. 抽牌,结算timer_card_draw
         2. 结算timer_lesson
         3. 结算timer_card_upgrade
         '''
+        self.card_draw = 3
+        self.card_draw += self.timer_card_draw[0]
+        self.timer_card_draw[0] = self.timer_card_draw[1]
+        self.timer_card_draw[1] = 0
+
+        pass
+
+    def play_card(self,card_idx):
+        '''
+        打出牌
+        1. 结算效果
+        2. 结算是否结束回合
+        '''
         pass
     
-    def turn_process():
+    def turn_process(self):
         '''
         回合进行
         直到不可出牌为止

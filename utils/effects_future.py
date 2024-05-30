@@ -1,4 +1,9 @@
 import re
+import math
+try:
+    from . import triggers_future
+except:
+    import triggers_future
 # e_effect-exam_block-(\d+) ->元气增加
 exam_block = re.compile(r"e_effect-exam_block-(\d+)$")
 def match_exam_block(string):
@@ -29,19 +34,18 @@ def match_exam_review(string):
         return [int(i) for i in exam_review.match(string).groups(default_values)]
     return default_values
 # e_effect-exam_lesson_depend_block-(\d+)-(\d+) -> 依赖元气千分比加分，元气千分比减少，加分次数
-exam_lesson_depend_block = re.compile(r"e_effect-exam_lesson_depend_block-(\d+)-(\d+)-(\d+)$")
-def match_exam_lesson_depend_block(string):
-    default_values = [0, 0]
-    if exam_lesson_depend_block.match(string):
-        return [int(i) for i in exam_lesson_depend_block.match(string).groups(default_values)]
-    return default_values
 # e_effect-exam_lesson_depend_block-(\d+)-(\d+)-(\d+)$ -> 依赖元气千分比加分，加分次数
+exam_lesson_depend_block_decrease = re.compile(r"e_effect-exam_lesson_depend_block-(\d+)-(\d+)-(\d+)$")
 exam_lesson_depend_block = re.compile(r"e_effect-exam_lesson_depend_block-(\d+)-(\d+)$")
 def match_exam_lesson_depend_block(string):
-    default_values = [0, 0]
-    if exam_lesson_depend_block.match(string):
-        return [int(i) for i in exam_lesson_depend_block.match(string).groups(default_values)]
+    default_values = [0, 0, 0]
+    if exam_lesson_depend_block_decrease.match(string):
+        return [int(i) for i in exam_lesson_depend_block_decrease.match(string).groups(default_values)]
+    else:
+        if exam_lesson_depend_block.match(string):
+            return [int(i) for i in exam_lesson_depend_block.match(string).groups(default_values)] + [0]
     return default_values
+
 # e_effect-exam_lesson_depend_review-(\d+)-(\d+) -> 依赖好印象加分，加分次数
 exam_lesson_depend_review = re.compile(r"e_effect-exam_lesson_depend_review-(\d+)-(\d+)$")
 def match_exam_lesson_depend_review(string):
@@ -127,11 +131,11 @@ def match_exam_lesson_depend_exam_review(string):
         return [int(i) for i in exam_lesson_depend_exam_review.match(string).groups(default_values)]
     return default_values
 # e_effect-exam_effect_timer-(\d+)-(\d+)-e_effect-exam_card_draw-(\d+) -> 效果回合数，发动次数，抽卡次数
-exam_effect_timer = re.compile(r"e_effect-exam_effect_timer-(\d+)-(\d+)-e_effect-exam_card_draw-(\d+)$")
+exam_effect_timer_draw = re.compile(r"e_effect-exam_effect_timer-(\d+)-(\d+)-e_effect-exam_card_draw-(\d+)$")
 def match_exam_effect_timer_draw(string):
     default_values = [0, 0, 0]
-    if exam_effect_timer.match(string):
-        return [int(i) for i in exam_effect_timer.match(string).groups(default_values)]
+    if exam_effect_timer_draw.match(string):
+        return [int(i) for i in exam_effect_timer_draw.match(string).groups(default_values)]
     return default_values
 # e_effect-exam_effect_timer-(\d+)-(\d+)-e_effect-exam_lesson-(\d+)-(\d+) -> 效果回合数，发动次数，加分，加分次数
 exam_effect_timer_lesson = re.compile(r"e_effect-exam_effect_timer-(\d+)-(\d+)-e_effect-exam_lesson-(\d+)-(\d+)$")
@@ -242,7 +246,7 @@ all_res = [exam_block, exam_card_play_aggressive, exam_lesson, exam_review,
            exam_stamina_consumption_add, exam_stamina_consumption_down, exam_stamina_consumption_down_fix, 
             exam_stamina_recover_fix_once, exam_parameter_buff, exam_lesson_buff, 
            exam_multiple_lesson_buff_lesson, exam_lesson_depend_exam_card_play_aggressive,exam_parameter_buff_multiple_per_turn, 
-           exam_lesson_depend_exam_review, exam_effect_timer, exam_effect_timer_lesson, exam_effect_timer_card_upgrade,
+           exam_lesson_depend_exam_review, exam_effect_timer_draw, exam_effect_timer_lesson, exam_effect_timer_card_upgrade,
            exam_extra_turn, exam_playable_value_add, exam_hand_grave_count_card_draw, exam_card_draw, exam_card_create_search,
            exam_anti_debuff, exam_block_restriction, exam_card_search_effect_play_count_buff, exam_card_upgrade] + [re.compile(i) for i in e_effects]
 
@@ -251,38 +255,109 @@ def match_all_effects(string):
     all_results = []
 
     # 调用所有的匹配函数并将结果连接起来
-    all_results += match_exam_block(string) # 元气增加
-    all_results += match_exam_card_play_aggressive(string) # やる気增加
-    all_results += match_exam_lesson(string) # 加分
-    all_results += match_exam_review(string) # 好印象增加
-    all_results += match_exam_lesson_depend_block(string) # 依赖元气加分
-    all_results += match_exam_lesson_depend_review(string) # 依赖好印象加分
-    all_results += match_exam_lesson_depend_aggressive(string) # 依赖やる気加分
-    all_results += match_exam_stamina_consumption_add(string) # 体力消耗增加
-    all_results += match_exam_stamina_consumption_down(string) # 体力消耗减少
-    all_results += match_exam_stamina_consumption_down_fix(string) # 固定体力消耗减少
-    all_results += match_exam_stamina_recover_fix_once(string) # 固定回复体力，单次
-    all_results += match_exam_parameter_buff(string) # 好调增加
-    all_results += match_exam_lesson_buff(string) # 集中增加
-    all_results += match_exam_multiple_lesson_buff_lesson(string) # 集中倍率增加
-    all_results += match_exam_lesson_depend_exam_card_play_aggressive(string) # 依赖やる気加分
-    all_results += match_exam_parameter_buff_multiple_per_turn(string) # 绝好调回合数
-    all_results += match_exam_lesson_depend_exam_review(string) # 依赖好印象加分
-    all_results += match_exam_effect_timer_draw(string) # 后续回合，抽卡
-    all_results += match_exam_effect_timer_lesson(string) # 后续回合，加分
-    all_results += match_exam_effect_timer_card_upgrade(string) # 后续回合，升级所有手牌
-    all_results += match_exam_extra_turn(string) # 增加回合
-    all_results += match_exam_playable_value_add(string) # 出牌数增加
-    all_results += match_exam_hand_grave_count_card_draw(string) # 手牌去墓地，同样数量牌上手
-    all_results += match_exam_card_draw(string) # 立刻抽卡
-    all_results += match_exam_card_create_search(string) # 上手一张SSR+
-    all_results += match_exam_anti_debuff(string) # 负面效果无效回合数
-    all_results += match_exam_block_restriction(string) # 元气增加无效回合数
-    all_results += match_exam_card_search_effect_play_count_buff(string) # 下一张卡效果发动2次
-    all_results += match_exam_card_upgrade(string) # 升级所有手牌
-    all_results += match_e_effects(string) # 特殊效果
+    all_results.append(match_exam_block(string))# 元气增加
+    all_results.append(match_exam_card_play_aggressive(string))# やる気增加
+    all_results.append(match_exam_lesson(string))# 加分
+    all_results.append(match_exam_review(string))# 好印象增加
+    all_results.append(match_exam_lesson_depend_block(string))# 依赖元气加分
+    all_results.append(match_exam_lesson_depend_review(string))# 依赖好印象加分
+    all_results.append(match_exam_lesson_depend_aggressive(string))# 依赖やる気加分
+    all_results.append(match_exam_stamina_consumption_add(string))# 体力消耗增加
+    all_results.append(match_exam_stamina_consumption_down(string))# 体力消耗减少
+    all_results.append(match_exam_stamina_consumption_down_fix(string))# 固定体力消耗减少
+    all_results.append(match_exam_stamina_recover_fix_once(string))# 固定回复体力，单次
+    all_results.append(match_exam_parameter_buff(string))# 好调增加
+    all_results.append(match_exam_lesson_buff(string))# 集中增加
+    all_results.append(match_exam_multiple_lesson_buff_lesson(string))# 集中倍率增加
+    all_results.append(match_exam_lesson_depend_exam_card_play_aggressive(string))# 依赖やる気加分
+    all_results.append(match_exam_parameter_buff_multiple_per_turn(string))# 绝好调回合数
+    all_results.append(match_exam_lesson_depend_exam_review(string))# 依赖好印象加分
+    all_results.append(match_exam_effect_timer_draw(string))# 后续回合，抽卡
+    all_results.append(match_exam_effect_timer_lesson(string))# 后续回合，加分
+    all_results.append(match_exam_effect_timer_card_upgrade(string))# 后续回合，升级所有手牌
+    all_results.append(match_exam_extra_turn(string))# 增加回合
+    all_results.append(match_exam_playable_value_add(string))# 出牌数增加
+    all_results.append(match_exam_hand_grave_count_card_draw(string))# 手牌去墓地，同样数量牌上手
+    all_results.append(match_exam_card_draw(string))# 立刻抽卡
+    all_results.append(match_exam_card_create_search(string))# 上手一张SSR+
+    all_results.append(match_exam_anti_debuff(string))# 负面效果无效回合数
+    all_results.append(match_exam_block_restriction(string))# 元气增加无效回合数
+    all_results.append(match_exam_card_search_effect_play_count_buff(string))# 下一张卡效果发动2次
+    all_results.append(match_exam_card_upgrade(string))# 升级所有手牌
+    all_results.append(match_e_effects(string))# 特殊效果
 
     return all_results
+
+
+def effect_exam_block(effects: list[int], game):
+    # 如果游戏没有元气增加无效回合数，则增加元气
+    if game.exam_block_restriction == 0:
+        game.block += effects[0] + game.card_play_aggressive
+
+def effect_exam_card_play_aggressive(effects: list[int], game):
+    game.card_play_aggressive += effects[1]
+
+def effect_exam_lesson(effects: list[int], game):
+    num = effects[2]
+    if game.lesson_buff > 0:
+        num += game.lesson_buff
+    mul = 1.0
+    if game.parameter_buff > 0:
+        mul += 0.5
+    if game.parameter_buff_multiple_per_turn > 0:
+        mul += game.parameter_buff * 0.1
+    num = math.ceil(num * mul)
+    game.lesson += num
+
+def effect_exam_review(effects: list[int], game):
+    game.review += effects[3]
+
+
+# depend的都不用考虑集中和好调，它们不会同时存在
+def effect_exam_lesson_depend_block(effects: list[int], game):
+    num = effects[4]
+    if game.block > 0:
+        num += game.block * effects[5]/1000
+    num = math.ceil(num)
+    game.lesson += num
+
+def effect_exam_lesson_depend_review(effects: list[int], game):
+    num = effects[6]
+    if game.review > 0:
+        num += game.review * effects[7]/1000
+    num = math.ceil(num)
+    game.lesson += num
+
+def effect_exam_lesson_depend_aggressive(effects: list[int], game):
+    num = effects[8]
+    if game.card_play_aggressive > 0:
+        num += game.card_play_aggressive * effects[9]
+    num = math.ceil(num)
+    game.lesson += num
+
+def effect_exam_stamina_consumption_add(effects: list[int], game):
+    game.stamina_consumption_add += effects[10]
+
+def effect_exam_stamina_consumption_down(effects: list[int], game):
+    game.stamina_consumption_down += effects[11]
+
+def effect_exam_stamina_consumption_down_fix(effects: list[int], game):
+    game.stamina_consumption_down_fix += effects[12]
+
+def effect_exam_stamina_recover_fix_once(effects: list[int], game):
+    game.stamina += effects[13]
+
+def effect_exam_parameter_buff(effects: list[int], game):
+    game.parameter_buff += effects[14]
+
+def effect_exam_lesson_buff(effects: list[int], game):
+    game.lesson_buff += effects[15]
+
+def effect_exam_multiple_lesson_buff_lesson(effects: list[int], game):
+    game.lesson_buff += effects[16]
+
+def effect_exam_lesson_depend_exam_card_play_aggressive(effects: list[int], game):
+    pass
 
 #print(len(match_all_effects("e_effect-exam_status_enchant-inf-enchant-p_card-01-men-2_034-enc01")))
 
@@ -323,3 +398,141 @@ def match_all_effects(string):
 
 # 回合结束相关结算
 # 1. 好调、绝好调、好印象、体力消耗增加、体力消耗减少 timer减少 （若该timer在当回合由0变为非0，则当回合不消耗）
+
+
+
+
+class Effect:
+    def __init__(self):
+        self.exam_block = [0]
+        self.exam_card_play_aggressive = [0]
+        self.exam_lesson = [0, 0]
+        self.exam_review = [0]
+        self.exam_lesson_depend_block = [0,0,0]
+        self.exam_lesson_depend_review = [0,0]
+        self.exam_lesson_depend_aggresive = [0,0]
+        self.exam_stamina_consumption_add = [0]
+        self.exam_stamina_consumption_down = [0]
+        self.exam_stamina_consumption_down_fix = [0]
+        self.exam_stamina_recover_fix_once = [0]
+        self.exam_parameter_buff = [0]
+        self.exam_lesson_buff = [0]
+        self.exam_multiple_lesson_buff_lesson = [0, 0, 0]
+        self.exam_lesson_depend_exam_card_play_aggressive = [0, 0]
+        self.exam_parameter_buff_multiple_per_turn = [0]
+        self.exam_lesson_depend_exam_review = [0, 0]
+        self.exam_effect_timer_draw = [0, 0, 0]
+        self.exam_effect_timer_lesson = [0, 0, 0, 0]
+        self.exam_effect_timer_card_upgrade = [0, 0]
+        self.exam_extra_turn = [0]
+        self.exam_playable_value_add = [0]
+        self.exam_hand_grave_count_card_draw = [0]
+        self.exam_card_draw = [0]
+        self.exam_card_create_search = [0]
+        self.exam_anti_debuff = [0]
+        self.exam_block_restriction = [0]
+        self.exam_search_effect_play_count_buff = [0]
+        self.exam_card_upgrade = [0]
+
+        self.exam_status_enchant = [0] * 8
+
+        self.card_play_trigger = [0] * len(triggers_future.card_play_trigger)
+
+
+    def set_effect(self, effects: list[int], triggers: list[int]):
+        self.exam_block = effects[0]
+        self.exam_card_play_aggressive = effects[1]
+        self.exam_lesson = effects[2]
+        self.exam_review = effects[3]
+        self.exam_lesson_depend_block = effects[4]
+        self.exam_lesson_depend_review = effects[5]
+        self.exam_lesson_depend_aggresive = effects[6]
+        self.exam_stamina_consumption_add = effects[7]
+        self.exam_stamina_consumption_down = effects[8]
+        self.exam_stamina_consumption_down_fix = effects[9]
+        self.exam_stamina_recover_fix_once = effects[10]
+        self.exam_parameter_buff = effects[11]
+        self.exam_lesson_buff = effects[12]
+        self.exam_multiple_lesson_buff_lesson = effects[13]
+        self.exam_lesson_depend_exam_card_play_aggressive = effects[14]
+        self.exam_parameter_buff_multiple_per_turn = effects[15]
+        self.exam_lesson_depend_exam_review = effects[16]
+        self.exam_effect_timer_draw = effects[17]
+        self.exam_effect_timer_lesson = effects[18]
+        self.exam_effect_timer_card_upgrade = effects[19]
+        self.exam_extra_turn = effects[20]
+        self.exam_playable_value_add = effects[21]
+        self.exam_hand_grave_count_card_draw = effects[22]
+        self.exam_card_draw = effects[23]
+        self.exam_card_create_search = effects[24]
+        self.exam_anti_debuff = effects[25]
+        self.exam_block_restriction = effects[26]
+        self.exam_search_effect_play_count_buff = effects[27]
+        self.exam_card_upgrade = effects[28]
+        self.exam_status_enchant = effects[29]
+
+
+        self.card_play_trigger = triggers
+
+    def observe(self):
+        # 返回所有属性的cat
+        _obs = []
+        _obs.extend(self.exam_block)
+        _obs.extend(self.exam_card_play_aggressive)
+        _obs.extend(self.exam_lesson)
+        _obs.extend(self.exam_review)
+        _obs.extend(self.exam_lesson_depend_block)
+        _obs.extend(self.exam_lesson_depend_review)
+        _obs.extend(self.exam_lesson_depend_aggresive)
+        _obs.extend(self.exam_stamina_consumption_add)
+        _obs.extend(self.exam_stamina_consumption_down)
+        _obs.extend(self.exam_stamina_consumption_down_fix)
+        _obs.extend(self.exam_stamina_recover_fix_once)
+        _obs.extend(self.exam_parameter_buff)
+        _obs.extend(self.exam_lesson_buff)
+        _obs.extend(self.exam_multiple_lesson_buff_lesson)
+        _obs.extend(self.exam_lesson_depend_exam_card_play_aggressive)
+        _obs.extend(self.exam_parameter_buff_multiple_per_turn)
+        _obs.extend(self.exam_lesson_depend_exam_review)
+        _obs.extend(self.exam_effect_timer_draw)
+        _obs.extend(self.exam_effect_timer_lesson)
+        _obs.extend(self.exam_effect_timer_card_upgrade)
+        _obs.extend(self.exam_extra_turn)
+        _obs.extend(self.exam_playable_value_add)
+        _obs.extend(self.exam_hand_grave_count_card_draw)
+        _obs.extend(self.exam_card_draw)
+        _obs.extend(self.exam_card_create_search)
+        _obs.extend(self.exam_anti_debuff)
+        _obs.extend(self.exam_block_restriction)
+        _obs.extend(self.exam_search_effect_play_count_buff)
+        _obs.extend(self.exam_card_upgrade)
+        _obs.extend(self.exam_status_enchant)
+        _obs.extend(self.card_play_trigger)
+        return _obs
+
+def read_effect_of_card(card: dict):
+    effect_list = card.get("playEffects")
+    all_effects = []
+    for effect in effect_list:
+        #print(effect)
+        effect_str = effect.get("produceExamEffectId")
+        trigger_str = effect.get("produceExamTriggerId")
+        effect_list = match_all_effects(effect_str)
+        trigger_list = triggers_future.match_all_triggers_exam_card(trigger_str)
+        tmp_effect = Effect()
+        tmp_effect.set_effect(effect_list, trigger_list)
+        all_effects.append(tmp_effect)
+    return all_effects
+
+
+if __name__ == "__main__":
+    import yaml
+    data = yaml.load(open("./yaml/ProduceCard.yaml", 'r',encoding='utf-8'), Loader=yaml.FullLoader)
+    for card in data:
+        all_effects = read_effect_of_card(card)
+        for effect in all_effects:
+            obs = effect.observe()
+            assert sum(obs) > 0, card.get("name")
+            print(obs)
+
+
