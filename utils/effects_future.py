@@ -43,7 +43,8 @@ def match_exam_lesson_depend_block(string):
         return [int(i) for i in exam_lesson_depend_block_decrease.match(string).groups(default_values)]
     else:
         if exam_lesson_depend_block.match(string):
-            return [int(i) for i in exam_lesson_depend_block.match(string).groups(default_values)] + [0]
+            tmp = [int(i) for i in exam_lesson_depend_block.match(string).groups(default_values)]
+            return [tmp[0], 0, tmp[1]]
     return default_values
 
 # e_effect-exam_lesson_depend_review-(\d+)-(\d+) -> 依赖好印象加分，加分次数
@@ -242,7 +243,7 @@ def match_e_effects(string):
     return [0]
 
 all_res = [exam_block, exam_card_play_aggressive, exam_lesson, exam_review, 
-           exam_lesson_depend_block, exam_lesson_depend_review, exam_lesson_depend_aggressive, 
+           exam_lesson_depend_block, exam_lesson_depend_aggressive, 
            exam_stamina_consumption_add, exam_stamina_consumption_down, exam_stamina_consumption_down_fix, 
             exam_stamina_recover_fix_once, exam_parameter_buff, exam_lesson_buff, 
            exam_multiple_lesson_buff_lesson, exam_lesson_depend_exam_card_play_aggressive,exam_parameter_buff_multiple_per_turn, 
@@ -260,7 +261,6 @@ def match_all_effects(string):
     all_results.append(match_exam_lesson(string))# 加分
     all_results.append(match_exam_review(string))# 好印象增加
     all_results.append(match_exam_lesson_depend_block(string))# 依赖元气加分
-    all_results.append(match_exam_lesson_depend_review(string))# 依赖好印象加分
     all_results.append(match_exam_lesson_depend_aggressive(string))# 依赖やる気加分
     all_results.append(match_exam_stamina_consumption_add(string))# 体力消耗增加
     all_results.append(match_exam_stamina_consumption_down(string))# 体力消耗减少
@@ -318,13 +318,6 @@ def effect_exam_lesson_depend_block(effects: list[int], game):
     num = effects[4]
     if game.block > 0:
         num += game.block * effects[5]/1000
-    num = math.ceil(num)
-    game.lesson += num
-
-def effect_exam_lesson_depend_review(effects: list[int], game):
-    num = effects[6]
-    if game.review > 0:
-        num += game.review * effects[7]/1000
     num = math.ceil(num)
     game.lesson += num
 
@@ -409,7 +402,6 @@ class Effect:
         self.exam_lesson = [0, 0]
         self.exam_review = [0]
         self.exam_lesson_depend_block = [0,0,0]
-        self.exam_lesson_depend_review = [0,0]
         self.exam_lesson_depend_aggresive = [0,0]
         self.exam_stamina_consumption_add = [0]
         self.exam_stamina_consumption_down = [0]
@@ -445,31 +437,31 @@ class Effect:
         self.exam_lesson = effects[2]
         self.exam_review = effects[3]
         self.exam_lesson_depend_block = effects[4]
-        self.exam_lesson_depend_review = effects[5]
-        self.exam_lesson_depend_aggresive = effects[6]
-        self.exam_stamina_consumption_add = effects[7]
-        self.exam_stamina_consumption_down = effects[8]
-        self.exam_stamina_consumption_down_fix = effects[9]
-        self.exam_stamina_recover_fix_once = effects[10]
-        self.exam_parameter_buff = effects[11]
-        self.exam_lesson_buff = effects[12]
-        self.exam_multiple_lesson_buff_lesson = effects[13]
-        self.exam_lesson_depend_exam_card_play_aggressive = effects[14]
-        self.exam_parameter_buff_multiple_per_turn = effects[15]
-        self.exam_lesson_depend_exam_review = effects[16]
-        self.exam_effect_timer_draw = effects[17]
-        self.exam_effect_timer_lesson = effects[18]
-        self.exam_effect_timer_card_upgrade = effects[19]
-        self.exam_extra_turn = effects[20]
-        self.exam_playable_value_add = effects[21]
-        self.exam_hand_grave_count_card_draw = effects[22]
-        self.exam_card_draw = effects[23]
-        self.exam_card_create_search = effects[24]
-        self.exam_anti_debuff = effects[25]
-        self.exam_block_restriction = effects[26]
-        self.exam_search_effect_play_count_buff = effects[27]
-        self.exam_card_upgrade = effects[28]
-        self.exam_status_enchant = effects[29]
+        self.exam_lesson_depend_aggressive = effects[5]
+        self.exam_stamina_consumption_add = effects[6]
+        self.exam_stamina_consumption_down = effects[7]
+        self.exam_stamina_consumption_down_fix = effects[8]
+        self.exam_stamina_recover_fix_once = effects[9]
+        self.exam_parameter_buff = effects[10]
+        self.exam_lesson_buff = effects[11]
+        self.exam_multiple_lesson_buff_lesson = effects[12]
+        self.exam_lesson_depend_exam_card_play_aggressive = effects[13]
+        self.exam_parameter_buff_multiple_per_turn = effects[14]
+        self.exam_lesson_depend_exam_review = effects[15]
+        self.exam_effect_timer_draw = effects[16]
+        self.exam_effect_timer_lesson = effects[17]
+        self.exam_effect_timer_card_upgrade = effects[18]
+        self.exam_extra_turn = effects[19]
+        self.exam_playable_value_add = effects[20]
+        self.exam_hand_grave_count_card_draw = effects[21]
+        self.exam_card_draw = effects[22]
+        self.exam_card_create_search = effects[23]
+        self.exam_anti_debuff = effects[24]
+        self.exam_block_restriction = effects[25]
+        self.exam_search_effect_play_count_buff = effects[26]
+        self.exam_card_upgrade = effects[27]
+        self.exam_status_enchant = effects[28]
+
 
 
         self.card_play_trigger = triggers
@@ -482,7 +474,6 @@ class Effect:
         _obs.extend(self.exam_lesson)
         _obs.extend(self.exam_review)
         _obs.extend(self.exam_lesson_depend_block)
-        _obs.extend(self.exam_lesson_depend_review)
         _obs.extend(self.exam_lesson_depend_aggresive)
         _obs.extend(self.exam_stamina_consumption_add)
         _obs.extend(self.exam_stamina_consumption_down)
@@ -509,6 +500,104 @@ class Effect:
         _obs.extend(self.exam_status_enchant)
         _obs.extend(self.card_play_trigger)
         return _obs
+    
+    def __str__(self):
+        str_ = ""
+        # trigger
+        if sum(self.card_play_trigger) > 0:
+            # "e_trigger-exam_card_play-card_play_aggressive_up-3",
+            # "e_trigger-exam_card_play-card_play_aggressive_up-6",
+            # "e_trigger-exam_card_play-lesson_buff_up-3",
+            # "e_trigger-exam_card_play-lesson_buff_up-6",
+            # "e_trigger-exam_card_play-parameter_buff",
+            # "e_trigger-exam_card_play-review_up-1",
+            # "e_trigger-exam_card_play-review_up-3",
+            # "e_trigger-exam_card_play-stamina_up_multiple-500",
+            str_ += " やる気 が3以上の場合、" if self.card_play_trigger[0] > 0 else ""
+            str_ += " やる気 が6以上の場合、" if self.card_play_trigger[1] > 0 else ""
+            str_ += " 集中 が3以上の場合、" if self.card_play_trigger[2] > 0 else ""
+            str_ += " 集中 が6以上の場合、" if self.card_play_trigger[3] > 0 else ""
+            str_ += " 好調　の　場合、" if self.card_play_trigger[4] > 0 else ""
+            str_ += " 好印象 が1以上の場合、" if self.card_play_trigger[5] > 0 else ""
+            str_ += " 好印象 が3以上の場合、" if self.card_play_trigger[6] > 0 else ""
+            str_ += " 体力が50%以上の場合、" if self.card_play_trigger[7] > 0 else ""
+
+        str_ += "元気 + " + str(self.exam_block[0]) + "\n" if sum(self.exam_block) > 0 else ""
+        str_ += "やる気 + " + str(self.exam_card_play_aggressive[0]) + "\n" if sum(self.exam_card_play_aggressive) > 0 else ""
+        str_ += "パラメータ + " + str(self.exam_lesson[0]) + "、" + str(self.exam_lesson[1]) + " 回\n" if sum(self.exam_lesson) > 0 else ""
+        str_ += "好印象 + " + str(self.exam_review[0]) + "\n" if sum(self.exam_review) > 0 else ""
+        # 
+        str_ += "元気の " + str(self.exam_lesson_depend_block[0]/10) + " %分パラメータ上昇" + str(self.exam_lesson_depend_block[2]) + " 回\n" if sum(self.exam_lesson_depend_block) > 0 else ""
+        str_ += "その後、元気を " + str(self.exam_lesson_depend_block[1]) + " %減少\n" if self.exam_lesson_depend_block[1] > 0 else ""
+        str_ += "やる気の " + str(self.exam_lesson_depend_aggresive[0]/10) + " %を増加、" + str(self.exam_lesson_depend_aggresive[1]) + " 回\n" if sum(self.exam_lesson_depend_aggresive) > 0 else ""
+        str_ += "体力消耗UP + " + str(self.exam_stamina_consumption_add[0]) + "ターン\n" if sum(self.exam_stamina_consumption_add) > 0 else ""
+        str_ += "体力消耗DOWN + " + str(self.exam_stamina_consumption_down[0]) + "ターン\n" if sum(self.exam_stamina_consumption_down) > 0 else ""
+        str_ += "直接体力消耗DOWN + " + str(self.exam_stamina_consumption_down_fix[0]) + "\n" if sum(self.exam_stamina_consumption_down_fix) > 0 else ""
+        str_ += "体力回復 + " + str(self.exam_stamina_recover_fix_once[0]) + "回\n" if sum(self.exam_stamina_recover_fix_once) > 0 else ""
+        str_ += "好調 + " + str(self.exam_parameter_buff[0]) + "ターン\n" if sum(self.exam_parameter_buff) > 0 else ""
+        str_ += "集中 + " + str(self.exam_lesson_buff[0]) + "\n" if sum(self.exam_lesson_buff) > 0 else ""
+        str_ += "パラメータ + " + str(self.exam_multiple_lesson_buff_lesson[0]) + "、" + str(self.exam_multiple_lesson_buff_lesson[2]) + "回 ( 集中 効果を" + str(self.exam_multiple_lesson_buff_lesson[1]/1000 + 1) +"倍 適用)\n" if sum(self.exam_multiple_lesson_buff_lesson) > 0 else ""
+        #  やる気 の 200% 分 パラメータ 上昇
+        str_ += "やる気の " + str(self.exam_lesson_depend_exam_card_play_aggressive[0]/10) + "%分パラメータ上昇、" + str(self.exam_lesson_depend_exam_card_play_aggressive[1]) + "回\n" if sum(self.exam_lesson_depend_exam_card_play_aggressive) > 0 else ""
+        str_ += "絶好調 + " + str(self.exam_parameter_buff_multiple_per_turn[0]) + "\n" if sum(self.exam_parameter_buff_multiple_per_turn) > 0 else ""
+        str_ += "好印象の " + str(self.exam_lesson_depend_exam_review[0]/10) + "%を増加、" + str(self.exam_lesson_depend_exam_review[1]) + "回\n" if sum(self.exam_lesson_depend_exam_review) > 0 else ""
+        #次のターン、スキルカードを引く 
+        # 2ターン 後、スキルカードを引く
+        if sum(self.exam_effect_timer_draw) > 0:
+            if self.exam_effect_timer_draw[0] >= 1:
+                str_ += "次のターン、スキルカードを{0}回引く\n".format(self.exam_effect_timer_draw[2])
+            if self.exam_effect_timer_draw[0] > 1:
+                str_ += "{0}ターン後、スキルカードを{1}回引く\n".format(self.exam_effect_timer_draw[0], self.exam_effect_timer_draw[2])
+        #e_effect-exam_effect_timer-0001-01-e_effect-exam_lesson-0038-01
+        # 次のターン、　パラメータ　を　38 上昇 1回
+        if sum(self.exam_effect_timer_lesson) > 0:
+            if self.exam_effect_timer_lesson[0] >= 1:
+                str_ += "次のターン、パラメータを{0}上昇{1}回\n".format(self.exam_effect_timer_lesson[2], self.exam_effect_timer_lesson[3])
+            if self.exam_effect_timer_lesson[0] > 1:
+                str_ += "{0}ターン後、パラメータを{1}上昇{2}回\n".format(self.exam_effect_timer_lesson[0], self.exam_effect_timer_lesson[2], self.exam_effect_timer_lesson[3])
+        # exam_effect_timer_card_upgrade = [0, 0]
+        if sum(self.exam_effect_timer_card_upgrade) > 0:
+            if self.exam_effect_timer_card_upgrade[0] >= 1:
+                str_ += "次のターン、手札をすべて レッスン中強化\n"
+            if self.exam_effect_timer_card_upgrade[0] > 1:
+                str_ += "{0}ターン後、手札をすべて レッスン中強化\n".format(self.exam_effect_timer_card_upgrade[0])
+
+        str_ += "追加ターン\n" if sum(self.exam_extra_turn) > 0 else ""
+        str_ += "出牌数 + " + str(self.exam_playable_value_add[0]) + "\n" if sum(self.exam_playable_value_add) > 0 else ""
+        str_ += "手札から墓地に移動し、同じ枚数のカードを引く\n" if sum(self.exam_hand_grave_count_card_draw) > 0 else ""
+        str_ += "カードを" + str(self.exam_card_draw[0]) + "枚引く\n" if sum(self.exam_card_draw) > 0 else ""
+        str_ += "SSR以上のカードを1枚引く\n" if sum(self.exam_card_create_search) > 0 else ""
+        str_ += "負の効果無効" + str(self.exam_anti_debuff[0]) + "ターン\n" if sum(self.exam_anti_debuff) > 0 else ""
+        str_ += "元気増加無効" + str(self.exam_block_restriction[0]) + "ターン\n" if sum(self.exam_block_restriction) > 0 else ""
+        str_ += "次のカード効果を2回発動\n" if sum(self.exam_search_effect_play_count_buff) > 0 else ""
+        str_ += "全ての手札をアップグレード\n" if sum(self.exam_card_upgrade) > 0 else ""
+        # e_effect-exam_status_enchant-inf-enchant-p_card-01-men-2_034-enc01 以降、 アクティブスキルカード 使用時、 固定元気  +2 
+        # e_effect-exam_status_enchant-inf-enchant-p_card-01-men-2_038-enc01 以降、 アクティブスキルカード 使用時、 集中  +1 
+        # e_effect-exam_status_enchant-inf-enchant-p_card-01-men-3_035-enc01 以降、ターン終了時 集中 が3以上の場合、 集中  +2 
+        # e_effect-exam_status_enchant-inf-enchant-p_card-02-ido-1_016-enc01 以降、ターン終了時、 好印象  +1 
+        # e_effect-exam_status_enchant-inf-enchant-p_card-02-ido-3_019-enc01 以降、ターン終了時、 好印象  +1 
+        # e_effect-exam_status_enchant-inf-enchant-p_card-02-men-2_004-enc01 以降、 メンタルスキルカード 使用時、 やる気  +1
+        # e_effect-exam_status_enchant-inf-enchant-p_card-02-men-2_058-enc01 以降、 メンタルスキルカード 使用時、 好印象  +1 
+        # e_effect-exam_status_enchant-inf-enchant-p_card-02-men-3_042-enc01 以降、ターン終了時 好印象 が3以上の場合、 好印象  +3 
+        str_ += "以降、 アクティブスキルカード 使用時、 固定元気  +2\n" if self.exam_status_enchant[0] == 1 else ""
+        str_ += "以降、 アクティブスキルカード 使用時、 集中  +1\n" if self.exam_status_enchant[0] == 2 else ""
+        str_ += "以降、ターン終了時 集中 が3以上の場合、 集中  +2\n" if self.exam_status_enchant[0] == 3 else ""
+        str_ += "以降、ターン終了時、 好印象  +1\n" if self.exam_status_enchant[0] == 4 else ""
+        str_ += "以降、ターン終了時、 好印象  +1\n" if self.exam_status_enchant[0] == 5 else ""
+        str_ += "以降、 メンタルスキルカード 使用時、 やる気  +1\n" if self.exam_status_enchant[0] == 6 else ""
+        str_ += "以降、 メンタルスキルカード 使用時、 好印象  +1\n" if self.exam_status_enchant[0] == 7 else ""
+        str_ += "以降、ターン終了時 好印象 が3以上の場合、 好印象  +3\n" if self.exam_status_enchant[0] == 8 else ""
+
+
+        return str_
+    
+    def __repr__(self):
+        return self.__str__()
+
+        
+            
+
+
 
 def read_effect_of_card(card: dict):
     effect_list = card.get("playEffects")
@@ -529,10 +618,11 @@ if __name__ == "__main__":
     import yaml
     data = yaml.load(open("./yaml/ProduceCard.yaml", 'r',encoding='utf-8'), Loader=yaml.FullLoader)
     for card in data:
+        print(card.get("name"))
         all_effects = read_effect_of_card(card)
         for effect in all_effects:
             obs = effect.observe()
             assert sum(obs) > 0, card.get("name")
-            print(obs)
+            print(effect)
 
 

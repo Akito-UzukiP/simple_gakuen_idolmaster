@@ -42,7 +42,7 @@ class Card:
         self.isInitial = False
         self.isEndTurnLost = False
 
-        self.playMovePositionType = "" # 打出后该去墓地还是弃牌堆
+        self.playMovePositionType = "ProduceCardMovePositionType_Grave" # 打出后该去墓地还是弃牌堆
 
         self.playableTrigger = [0] * len(triggers_future.start_turn_trigger)
 
@@ -59,7 +59,9 @@ class Card:
         desc_str = self.descriptions
         return_text = f"计划类型: {plan_types[self.planType]}\n"
         return_text += f"类别: {category_types[self.category]}\n"
-        return_text +=  f"{name}({rarity})\n{desc_str}\n体力: {stamina}+{forceStamina}\n"
+        return_text +=  f"{name}({rarity})\n体力: {stamina} 直接体力: {forceStamina}\n"
+        if self.isInitial:
+            return_text += "レッスン 開始時手札に入る \n"
         if costType != "ExamCostType_Unknown":
             # ExamCostType_ExamReview -> 好印象
             # ExamCostType_ExamCardPlayAggressive -> やる気
@@ -67,7 +69,16 @@ class Card:
             # ExamCostType_ExamParameterBuff -> 好調
             # ExamCostType_Unknown -> 无
             return_text += f"额外消耗: {costValue} {cost_classes[costType]}\n"
-        return name
+        for effect in self.playEffects:
+            return_text += str(effect)
+        if self.playMovePositionType == "ProduceCardMovePositionType_Lost":
+            return_text += "レッスン中1回 "
+        if self.noDeckDuplication:
+            return_text += "重複不可 "
+        return_text += "\n"
+
+        
+        return return_text
 
     def __repr__(self):
         return self.__str__()
@@ -94,6 +105,7 @@ def read_card(card_json:dict):
     card.isRestrict = card_json.get('isRestrict')
     card.isInitial = card_json.get('isInitial')
     card.isEndTurnLost = card_json.get('isEndTurnLost')
+    card.playMovePositionType = card_json.get('playMovePositionType')
 
     card.playEffects = effects_future.read_effect_of_card(card_json)
 
@@ -120,7 +132,6 @@ if __name__ == "__main__":
         card.upgradeCard = upgrade_card
     for card in all_cards:
         print(card)
-        print(card.upgradeCard)
         print()
 
 # id,upgradeCount,name,assetId,isCharacterAsset,rarity,planType,category,stamina,forceStamina,costType,costValue,playProduceExamTriggerId,playEffects,playMovePositionType,moveEffectTriggerType,moveProduceExamEffectIds,isEndTurnLost,isInitial,isRestrict,produceCardStatusEnchantId,searchTag,libraryHidden,noDeckDuplication,descriptions,unlockProducerLevel,rentalUnlockProducerLevel,evaluation,originIdolCardId,originSupportCardId,isInitialDeckProduceCard,effectGroupIds,viewStartTime,isLimited,order

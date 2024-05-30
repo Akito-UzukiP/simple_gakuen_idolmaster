@@ -11,6 +11,7 @@
 # e_trigger-exam_start_turn-parameter_buff
 # e_trigger-exam_start_turn-stamina_up_multiple-500
 # e_trigger-exam_start_turn-turn_progress_up-3
+from typing import Any
 import re
 card_play_trigger = {
     "e_trigger-exam_card_play-card_play_aggressive_up-3",
@@ -39,3 +40,49 @@ def match_all_triggers_exam_card(text):
         if re.search(trig, text):
             trigger[i] = 1
     return trigger
+
+def match_all_triggers_start_turn(text):
+    '''
+    返回one-hot编码的触发器
+    '''
+    trigger = [0] * len(start_turn_trigger)
+    for i, trig in enumerate(start_turn_trigger):
+        if re.search(trig, text):
+            trigger[i] = 1
+    return trigger
+
+
+def check_trigger_exam_card(game: Any, trigger: list[int]):
+    '''
+    检查卡牌的触发器
+    默认为True，对于每一个不为0的触发器位，若其对应的触发器条件不满足，则返回False
+    '''
+    assert len(trigger) == len(card_play_trigger)
+    triggered = True
+    if trigger[0]:
+        if game.card_play_aggressive < 3:
+            triggered = False
+    if trigger[1]:
+        if game.card_play_aggressive < 6:
+            triggered = False
+    if trigger[2]:
+        if game.lesson_buff < 3:
+            triggered = False
+    if trigger[3]:
+        if game.lesson_buff < 6:
+            triggered = False
+    if trigger[4]:
+        if game.parameter_buff == 0:
+            triggered = False
+    if trigger[5]:
+        if game.review < 1:
+            triggered = False
+    if trigger[6]:
+        if game.review < 3:
+            triggered = False
+    if trigger[7]:
+        if game.max_stamina * 0.5 > game.stamina:
+            triggered = False
+    return triggered
+        
+

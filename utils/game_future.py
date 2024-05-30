@@ -36,6 +36,7 @@ class Game:
 
     '''
     def __init__(self):
+        self.max_stamina = 30
         self.stamina = 30
         self.block = 0
         self.card_play_aggressive = 0
