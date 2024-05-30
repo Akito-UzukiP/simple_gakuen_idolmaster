@@ -210,14 +210,15 @@ def match_exam_card_upgrade(string):
         return [1]
     return default_values
 # 特殊持续效果
-# e_effect-exam_status_enchant-inf-enchant-p_card-01-men-2_034-enc01 以降、 アクティブスキルカード 使用時、 固定元気  +2 
-# e_effect-exam_status_enchant-inf-enchant-p_card-01-men-2_038-enc01 以降、 アクティブスキルカード 使用時、 集中  +1 
-# e_effect-exam_status_enchant-inf-enchant-p_card-01-men-3_035-enc01 以降、ターン終了時 集中 が3以上の場合、 集中  +2 
-# e_effect-exam_status_enchant-inf-enchant-p_card-02-ido-1_016-enc01 以降、ターン終了時、 好印象  +1 
-# e_effect-exam_status_enchant-inf-enchant-p_card-02-ido-3_019-enc01 以降、ターン終了時、 好印象  +1 
-# e_effect-exam_status_enchant-inf-enchant-p_card-02-men-2_004-enc01 以降、 メンタルスキルカード 使用時、 やる気  +1
-# e_effect-exam_status_enchant-inf-enchant-p_card-02-men-2_058-enc01 以降、 メンタルスキルカード 使用時、 好印象  +1 
-# e_effect-exam_status_enchant-inf-enchant-p_card-02-men-3_042-enc01 以降、ターン終了時 好印象 が3以上の場合、 好印象  +3 
+# e_effect-exam_status_enchant-inf-enchant-p_card-01-men-2_034-enc01 以降、 アクティブスキルカード 使用時、 固定元気  +2  0
+# e_effect-exam_status_enchant-inf-enchant-p_card-01-men-2_038-enc01 以降、 アクティブスキルカード 使用時、 集中  +1 1
+
+# e_effect-exam_status_enchant-inf-enchant-p_card-01-men-3_035-enc01 以降、ターン終了時 集中 が3以上の場合、 集中  +2 2
+# e_effect-exam_status_enchant-inf-enchant-p_card-02-ido-1_016-enc01 以降、ターン終了時、 好印象  +1 3
+# e_effect-exam_status_enchant-inf-enchant-p_card-02-ido-3_019-enc01 以降、ターン終了時、 好印象  +1 4
+# e_effect-exam_status_enchant-inf-enchant-p_card-02-men-2_004-enc01 以降、 メンタルスキルカード 使用時、 やる気  +1 5
+# e_effect-exam_status_enchant-inf-enchant-p_card-02-men-2_058-enc01 以降、 メンタルスキルカード 使用時、 好印象  +1 6
+# e_effect-exam_status_enchant-inf-enchant-p_card-02-men-3_042-enc01 以降、ターン終了時 好印象 が3以上の場合、 好印象  +3 7
 e_effects = [
     "e_effect-exam_status_enchant-inf-enchant-p_card-01-men-2_034-enc01",
     "e_effect-exam_status_enchant-inf-enchant-p_card-01-men-2_038-enc01",
@@ -282,28 +283,6 @@ def match_all_effects(string):
     return all_results
 
 
-def effect_exam_block(effects: list[int], game):
-    # 如果游戏没有元气增加无效回合数，则增加元气
-    if game.block_restriction == 0:
-        game.block += effects[0] + game.card_play_aggressive
-
-def effect_exam_card_play_aggressive(effects: list[int], game):
-    game.card_play_aggressive += effects[1]
-
-def effect_exam_lesson(effects: list[int], game):
-    num = effects[2]
-    if game.lesson_buff > 0:
-        num += game.lesson_buff
-    mul = 1.0
-    if game.parameter_buff > 0:
-        mul += 0.5
-    if game.parameter_buff_multiple_per_turn > 0:
-        mul += game.parameter_buff * 0.1
-    num = math.ceil(num * mul)
-    game.lesson += num
-
-def effect_exam_review(effects: list[int], game):
-    game.review += effects[3]
 
 
 
@@ -476,22 +455,22 @@ class Effect:
 
         str_ += "元気 + " + str(self.exam_block[0]) + "\n" if sum(self.exam_block) > 0 else ""
         str_ += "やる気 + " + str(self.exam_card_play_aggressive[0]) + "\n" if sum(self.exam_card_play_aggressive) > 0 else ""
-        str_ += "パラメータ + " + str(self.exam_lesson[0]) + "、" + str(self.exam_lesson[1]) + " 回\n" if sum(self.exam_lesson) > 0 else ""
+        str_ += "パラメータ + " + str(self.exam_lesson[0]) + ("、" + str(self.exam_lesson[1]) + " 回\n" if self.exam_lesson[1] > 1 else "\n") if sum(self.exam_lesson) > 0 else ""
         str_ += "好印象 + " + str(self.exam_review[0]) + "\n" if sum(self.exam_review) > 0 else ""
         # 
-        str_ += "元気の " + str(self.exam_lesson_depend_block[0]/10) + " %分パラメータ上昇" + str(self.exam_lesson_depend_block[2]) + " 回\n" if sum(self.exam_lesson_depend_block) > 0 else ""
+        str_ += "元気の " + str(self.exam_lesson_depend_block[0]/10) + " %分パラメータ上昇" + (str(self.exam_lesson_depend_block[2]) + " 回\n" if self.exam_lesson_depend_block[2] > 1 else "\n") if sum(self.exam_lesson_depend_block) > 0 else ""
         str_ += "その後、元気を " + str(self.exam_lesson_depend_block[1]/10) + " %減少\n" if self.exam_lesson_depend_block[1] > 0 else ""
         str_ += "体力消耗UP + " + str(self.exam_stamina_consumption_add[0]) + "ターン\n" if sum(self.exam_stamina_consumption_add) > 0 else ""
         str_ += "体力消耗DOWN + " + str(self.exam_stamina_consumption_down[0]) + "ターン\n" if sum(self.exam_stamina_consumption_down) > 0 else ""
         str_ += "直接体力消耗DOWN + " + str(self.exam_stamina_consumption_down_fix[0]) + "\n" if sum(self.exam_stamina_consumption_down_fix) > 0 else ""
-        str_ += "体力回復 + " + str(self.exam_stamina_recover_fix_once[0]) + "回\n" if sum(self.exam_stamina_recover_fix_once) > 0 else ""
+        str_ += "体力回復 + " + str(self.exam_stamina_recover_fix_once[0]) + "\n" if sum(self.exam_stamina_recover_fix_once) > 0 else ""
         str_ += "好調 + " + str(self.exam_parameter_buff[0]) + "ターン\n" if sum(self.exam_parameter_buff) > 0 else ""
         str_ += "集中 + " + str(self.exam_lesson_buff[0]) + "\n" if sum(self.exam_lesson_buff) > 0 else ""
-        str_ += "パラメータ + " + str(self.exam_multiple_lesson_buff_lesson[0]) + "、" + str(self.exam_multiple_lesson_buff_lesson[2]) + "回 ( 集中 効果を" + str(self.exam_multiple_lesson_buff_lesson[1]/1000 + 1) +"倍 適用)\n" if sum(self.exam_multiple_lesson_buff_lesson) > 0 else ""
+        str_ += "パラメータ + " + str(self.exam_multiple_lesson_buff_lesson[0]) + "、" + (str(self.exam_multiple_lesson_buff_lesson[2]) + "回" if self.exam_multiple_lesson_buff_lesson[2] > 1 else "") + " ( 集中 効果を" + str(self.exam_multiple_lesson_buff_lesson[1]/1000 + 1) +"倍 適用)\n" if sum(self.exam_multiple_lesson_buff_lesson) > 0 else ""
         #  やる気 の 200% 分 パラメータ 上昇
-        str_ += "やる気の " + str(self.exam_lesson_depend_exam_card_play_aggressive[0]/10) + "%分パラメータ上昇、" + str(self.exam_lesson_depend_exam_card_play_aggressive[1]) + "回\n" if sum(self.exam_lesson_depend_exam_card_play_aggressive) > 0 else ""
+        str_ += "やる気の " + str(self.exam_lesson_depend_exam_card_play_aggressive[0]/10) + "%分パラメータ上昇、" + (str(self.exam_lesson_depend_exam_card_play_aggressive[1]) + "回\n" if self.exam_lesson_depend_exam_card_play_aggressive[1] > 1 else "\n") if sum(self.exam_lesson_depend_exam_card_play_aggressive) > 0 else ""
         str_ += "絶好調 + " + str(self.exam_parameter_buff_multiple_per_turn[0]) + "\n" if sum(self.exam_parameter_buff_multiple_per_turn) > 0 else ""
-        str_ += "好印象の " + str(self.exam_lesson_depend_exam_review[0]/10) + "%を増加、" + str(self.exam_lesson_depend_exam_review[1]) + "回\n" if sum(self.exam_lesson_depend_exam_review) > 0 else ""
+        str_ += "好印象の " + str(self.exam_lesson_depend_exam_review[0]/10) + "%を増加、" + (str(self.exam_lesson_depend_exam_review[1]) + "回\n" if self.exam_lesson_depend_exam_review[1] > 1 else "\n") if sum(self.exam_lesson_depend_exam_review) > 0 else ""
         #次のターン、スキルカードを引く 
         # 2ターン 後、スキルカードを引く
         if sum(self.exam_effect_timer_draw) > 0:

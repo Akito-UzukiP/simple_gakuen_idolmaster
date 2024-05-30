@@ -187,21 +187,30 @@ for card in data:
 all_upgrade_cards = []
 for card in all_cards:
     upgrade_card = find_upgrade_card(card, all_cards)
-    card.upgradeCard = upgrade_card
-    upgrade_card.downgradeCard = card
+    if upgrade_card is not None:
+        card.upgradeCard = upgrade_card
+        upgrade_card.downgradeCard = card
+    else:
+        card.upgradeCard = card
+        card.downgradeCard = card
 for card in all_cards:
     if card.downgradeCard is None:
         card.downgradeCard = card
 
 all_logic_cards = [i for i in all_cards if i.planType == "ProducePlanType_Plan2"]
 all_sense_cards = [i for i in all_cards if i.planType == "ProducePlanType_Plan1"]
-
+all_logic_upgraded_ssr_cards = [i for i in all_logic_cards if i.rarity == "Ssr" and i.upgradeCard == i]
+all_sense_upgraded_ssr_cards = [i for i in all_sense_cards if i.rarity == "Ssr" and i.upgradeCard == i]
 def random_logic_card():
     return random.choice(all_logic_cards)
 def random_sense_card():
     return random.choice(all_sense_cards)
 
-
+def search_card_by_name(name:str):
+    for card in all_cards:
+        if card.name == name:
+            return card
+    return None
 if __name__ == "__main__":
     print(print_cards(all_logic_cards[:5], 3))
 
