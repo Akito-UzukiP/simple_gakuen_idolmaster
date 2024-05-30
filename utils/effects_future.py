@@ -528,7 +528,7 @@ class Effect:
 
 # 1. 元气增加
 def effect_exam_block(effect: Effect, game: Any):
-    if game.block_restriction == 0:
+    if game.block_restriction == 0 and effect.exam_block[0] > 0:
         game.block += effect.exam_block[0] + game.card_play_aggressive
 
 # 2. やる気增加
@@ -681,7 +681,9 @@ def effect_exam_card_upgrade(effect: Effect, game: Any):
 def effect_exam_status_enchant(effect: Effect, game: Any):
     # 转化为one-hot
     tmp = [0] * 8
-    tmp[effect.exam_status_enchant[0] - 1] = 1
+    if sum(effect.exam_status_enchant) == 0:
+        return
+    tmp[effect.exam_status_enchant[0] - 1] += 1
     game.status_enchant = tmp
 def effect_roll(effects: list[Effect], game):
     pass

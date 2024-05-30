@@ -211,6 +211,7 @@ def search_card_by_name(name:str):
         if card.name == name:
             return card
     return None
+
 if __name__ == "__main__":
     print(print_cards(all_logic_cards[:5], 3))
 

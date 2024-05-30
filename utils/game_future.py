@@ -50,7 +50,10 @@ class Game:
         self.block = 0
         self.card_play_aggressive = 0
         self.lesson = 0
-        self.target_lesson = 60
+        self.target_lesson = 300
+        self.turn_left = 12
+        self.current_turn = 0
+        self.first_turn = True
         self.review = 0
         self.review_Flag = False
         # 每回合结束时减少的属性的Flag,在减少时判断如果为True，说明是第一次减少，不减少，将其置为False
@@ -93,11 +96,6 @@ class Game:
         self.discard = []
         self.exile = []
 
-        # 回合数、目标分数
-        self.turn_left = 6
-        self.target = 60
-        self.current_turn = 0
-        self.first_turn = True
 
     def __str__(self) -> str:
         str_ = "剩余回合数: " + str(self.turn_left) + "\n"
@@ -121,6 +119,15 @@ class Game:
         str_ += "下一回合，所有手牌升级: " + str(self.timer_card_upgrade[0]) +( "张，下下回合" + str(self.timer_card_upgrade[1]) + "张\n" if self.timer_card_upgrade[1] > 0 else "") if self.timer_card_upgrade[0] > 0 else ""
         str_ += "下一张牌效果触发两次\n" if self.search_effect_play_count_buff else ""
 
+        # enchant
+        str_ += "アクティブスキルカード 使用時、 固定元気  +2、倍率"+ str(self.status_enchant[0]) + "\n" if self.status_enchant[0] > 0 else ""
+        str_ += "アクティブスキルカード 使用時、 集中  +1、倍率"+ str(self.status_enchant[1]) + "\n" if self.status_enchant[1] > 0 else ""
+        str_ += "ターン終了時 集中 が3以上の場合、 集中  +2、倍率"+ str(self.status_enchant[2]) + "\n" if self.status_enchant[2] > 0 else ""
+        str_ += "ターン終了時、 好印象  +1、倍率"+ str(self.status_enchant[3]) + "\n" if self.status_enchant[3] > 0 else ""
+        str_ += "ターン終了時、 好印象  +1、倍率"+ str(self.status_enchant[4]) + "\n" if self.status_enchant[4] > 0 else ""
+        str_ += "メンタルスキルカード 使用時、 やる気  +1、倍率"+ str(self.status_enchant[5]) + "\n" if self.status_enchant[5] > 0 else ""
+        str_ += "メンタルスキルカード 使用時、 好印象  +1、倍率"+ str(self.status_enchant[6]) + "\n" if self.status_enchant[6] > 0 else ""
+        str_ += "ターン終了時 好印象 が3以上の場合、 好印象  +3、倍率"+ str(self.status_enchant[7]) + "\n" if self.status_enchant[7] > 0 else ""
         str_ += cards_future.print_cards(self.hand, card_per_line=3, max_symbols_per_line=50) if len(self.hand) > 0 else ""
         return str_
     
@@ -167,6 +174,16 @@ class Game:
         '''
         抽牌
         '''
+        # 处理deck中所有必上手的牌
+        if self.first_turn:
+            self.first_turn = False
+            determined_card = []
+            for i, card in enumerate(self.deck):
+                if card.isInitial:
+                    determined_card.append(i)
+            for i in determined_card[::-1]:
+                self.hand.append(self.deck.pop(i))
+        num = max(0, num-len(self.hand))
         for _ in range(num):
             if len(self.deck) == 0:
                 self.deck = self.discard
@@ -289,11 +306,11 @@ class Game:
         return True
 
 
-    def discard_card(self, card_idx):
+    def discard_card(self, card_idx, used = False):
         '''
         弃牌
         '''
-        if self.hand[card_idx].playMovePositionType == "ProduceCardMovePositionType_Lost":
+        if self.hand[card_idx].playMovePositionType == "ProduceCardMovePositionType_Lost" and used:
             self.exile.append(self.hand.pop(card_idx))
         else:
             self.discard.append(self.hand.pop(card_idx))
@@ -383,7 +400,7 @@ class Game:
         self.is_over = self.check_game_end()
 
         # 弃牌/除外
-        self.discard_card(card_idx)
+        self.discard_card(card_idx, True)
         self.playable_value -= 1
     
     def turn_process(self):

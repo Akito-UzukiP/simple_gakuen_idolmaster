@@ -1,8 +1,10 @@
 from utils import game_future, cards_future, effects_future
 from utils.cards_future import Card, search_card_by_name as sc
+import random
 game = game_future.Game()
-kotone_deck = [sc("アピールの基本")] * 2 + [sc("ポーズの基本")] + [sc("表現の基本")] * 2 + [sc("目線の基本")] * 2 + [sc("可愛い仕草")] + [sc("よそ見はダメ♪+")]
-game.deck = kotone_deck
+kotone_deck = [sc("アピールの基本")] * 2 + [sc("ポーズの基本")] + [sc("表現の基本")] * 2 + [sc("目線の基本")] * 2 + [sc("可愛い仕草")] + [sc("よそ見はダメ♪+")] + [sc("本番前夜")] * 4
+all_logic_cards = cards_future.all_logic_cards
+game.deck = all_logic_cards
 while not game.is_over:
     game.start_turn()
     print(game)
@@ -16,4 +18,5 @@ while not game.is_over:
         if not action == -1:
             game.play_card(action)
         print(game)
+        #print(len(game.deck), len(game.hand), len(game.discard), len(game.exile))
     game.end_turn()
