@@ -9,7 +9,11 @@ while not game.is_over:
     while game.playable_value > 0:
         action = 99
         while game.check_playable(action) == False:
-            action = int(input("输入打出的牌(从0开始): "))
-        game.play_card(action)
+            action = int(input("输入打出的牌(从0开始, -1表示休息[体力+2]): "))
+            if action == -1:
+                game.rest()
+                break
+        if not action == -1:
+            game.play_card(action)
         print(game)
     game.end_turn()

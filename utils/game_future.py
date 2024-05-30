@@ -100,7 +100,8 @@ class Game:
         self.first_turn = True
 
     def __str__(self) -> str:
-        str_ = "体力: " + str(self.stamina) + "/" + str(self.max_stamina) + "\n"
+        str_ = "剩余回合数: " + str(self.turn_left) + "\n"
+        str_ += "体力: " + str(self.stamina) + "/" + str(self.max_stamina) + "\n"
         str_ += "分数: " + str(self.lesson) + "/" + str(self.target_lesson) + "\n"
         str_ += "元気: " + str(self.block) + "\n" if self.block > 0 else ""
         str_ += "やる気: " + str(self.card_play_aggressive) + "\n" if self.card_play_aggressive > 0 else ""
@@ -335,6 +336,7 @@ class Game:
         '''
         self.stamina += 2
         self.stamina = min(self.stamina, self.max_stamina)
+        self.playable_value -= 1
 
     def play_card(self,card_idx):
         '''
