@@ -52,7 +52,7 @@ def match_all_triggers_start_turn(text):
     return trigger
 
 
-def check_trigger_exam_card(game: Any, trigger: list[int]):
+def check_trigger_exam_card(trigger: list[int], game: Any):
     '''
     检查卡牌的触发器
     默认为True，对于每一个不为0的触发器位，若其对应的触发器条件不满足，则返回False
@@ -85,4 +85,26 @@ def check_trigger_exam_card(game: Any, trigger: list[int]):
             triggered = False
     return triggered
         
-
+def check_trigger_start_turn(trigger: list[int], game: Any):
+    '''
+    检查回合开始的触发器
+    默认为True，对于每一个不为0的触发器位，若其对应的触发器条件不满足，则返回False
+    '''
+    assert len(trigger) == len(start_turn_trigger)
+    triggered = True
+    if trigger[0]:
+        if game.lesson / game.target_lesson > 1:
+            triggered = False
+    if trigger[1]:
+        if game.block > 0:
+            triggered = False
+    if trigger[2]:
+        if game.parameter_buff == 0:
+            triggered = False
+    if trigger[3]:
+        if game.max_stamina * 0.5 > game.stamina:
+            triggered = False
+    if trigger[4]:
+        if game.turn_progress < 3:
+            triggered = False
+    return triggered

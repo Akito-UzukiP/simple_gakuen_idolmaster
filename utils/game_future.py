@@ -1,6 +1,14 @@
 import random
 import numpy as np
 import math
+try:
+    from . import triggers_future, effects_future, cards_future
+    from .cards_future import Card
+    from .effects_future import Effect
+except:
+    import triggers_future, effects_future, cards_future
+    from cards_future import Card
+    from effects_future import Effect
 class Game:
     '''
     Game类,用于描述游戏状态
@@ -41,25 +49,40 @@ class Game:
         self.block = 0
         self.card_play_aggressive = 0
         self.lesson = 0
+        self.target_lesson = 60
         self.review = 0
+        self.review_Flag = False
+        # 每回合结束时减少的属性的Flag,在减少时判断如果为True，说明是第一次减少，不减少，将其置为False
         self.lesson_buff = 0
         self.parameter_buff = 0
+        self.parameter_buff_Flag = False
         self.parameter_buff_multiple_per_turn = 0
+        self.parameter_buff_multiple_per_turn_Flag = False
 
         self.card_draw = 3
         self.playable_value = 1
 
         self.stamina_consumption_add = 0
+        self.stamina_consumption_add_Flag = False
         self.stamina_consumption_down = 0
+        self.stamina_consumption_down_Flag = False
         self.stamina_consumption_down_fix = 0
+        self.anti_debuff = 0
+        self.anti_debuff_Flag = False
+        self.block_restriction = 0
+        self.block_restriction_Flag = False
 
         self.timer_card_draw = [0, 0]
         self.timer_lesson = 0
         self.timer_card_upgrade = [0, 0]
-        self.anti_debuff = 0
-        self.block_restriction = 0
         self.search_effect_play_count_buff = 0
         self.exam_status_enchant = [0] * 8
+
+        self.hand_grave_count_card_draw = False # 在打出牌之后检查该Flag，如果为True，整体换牌
+        self.card_create_search = False # 在打出牌后检查该Flag，如果为True，搜一张SSR+牌加入手牌
+        self.search_effect_play_count_buff = False # 在打牌前检查该Flag，如果为True，下一张牌效果触发两次，不扣血 ### 可能存在上手两张国民アイドル导致该效果的对象仍然是该效果，过于稀有，暂时不考虑
+        self.card_upgrade = False # 在打牌后检查该Flag，如果为True，手牌全部 * レッスン中強化 * 由于暂时没加入レッスン外強化，理解为不存在++卡就行
+
 
         # 手牌、牌库、弃牌堆、除外
         self.hand = []
@@ -71,6 +94,31 @@ class Game:
         self.turn_left = 6
         self.target = 60
         self.current_turn = 0
+        self.first_turn = True
+
+    def __str__(self) -> str:
+        str_ = "体力: " + str(self.stamina) + "/" + str(self.max_stamina) + "\n"
+        str_ += "元気: " + str(self.block) + "\n" if self.block > 0 else ""
+        str_ += "やる気: " + str(self.card_play_aggressive) + "\n" if self.card_play_aggressive > 0 else ""
+        str_ += "分数: " + str(self.lesson) + "/" + str(self.target_lesson) + "\n"
+        str_ += "好印象: " + str(self.review) + "\n" if self.review > 0 else ""
+        str_ += "集中: " + str(self.lesson_buff) + "\n" if self.lesson_buff > 0 else ""
+        str_ += "好调: " + str(self.parameter_buff) + "\n" if self.parameter_buff > 0 else ""
+        str_ += "绝好调: " + str(self.parameter_buff_multiple_per_turn) + "\n" if self.parameter_buff_multiple_per_turn > 0 else ""
+        str_ += cards_future.print_cards(self.hand, card_per_line=3, max_symbols_per_line=50)
+        return str_
+    
+    
+
+    def check_game_end(self):
+        '''
+        检查游戏是否结束
+        '''
+        if self.lesson >= self.target_lesson:
+            return True
+        if self.turn_left == 0:
+            return True
+        return False
 
     def draw(self, num):
         '''
@@ -86,33 +134,112 @@ class Game:
             random.shuffle(self.deck)
             self.hand.append(self.deck.pop())
 
-    def lesson_add(self, num):
-        '''
-        加分
-        '''
-        if self.lesson_buff > 0:
-            num += self.lesson_buff
-        mul = 1.0
-        if self.parameter_buff > 0:
-            mul += 0.5
-        if self.parameter_buff_multiple_per_turn > 0:
-            mul += self.parameter_buff * 0.1
-        num = math.ceil(num * mul)
-        self.lesson += num
 
-    def lesson_add_depend(self, percent, depend = "block", reduce = 0000):
+    def cost_stamina(self, cost):
         '''
-        加分，比例依赖，由于仅logic所以不用管lesson_buff和parameter_buff
+        消耗体力，调用时应当保证体力和消耗体力的合法性
         '''
-        if depend == "block":
-            num = self.block * percent
-        elif depend == "stamina":
-            num = self.stamina * percent
-        elif depend == "review":
-            num = self.review * percent
-        if reduce > 0:
-            self.block *= (1-reduce)
-        self.lesson += num
+        if self.stamina_consumption_add:
+            cost = math.ceil(cost * 2)
+        if self.stamina_consumption_down:
+            cost = math.ceil(cost / 2)
+        if self.stamina_consumption_down_fix:
+            cost -= self.stamina_consumption_down_fix
+        cost = max(0, cost)
+        if self.block > 0:
+            if self.block >= cost:
+                self.block -= cost
+                return
+            cost -= self.block
+            self.block = 0
+        self.stamina -= cost
+    def cost_stamina_force(self, cost):
+        '''
+        直接消耗体力
+        '''
+        if self.stamina_consumption_add:
+            cost = math.ceil(cost * 2)
+        if self.stamina_consumption_down:
+            cost = math.ceil(cost / 2)
+        if self.stamina_consumption_down_fix:
+            cost -= self.stamina_consumption_down_fix
+        cost = max(0, cost)
+        self.stamina -= cost
+
+    def cost_special(self, cost_type, cost_value):
+        '''
+        消耗特殊资源，应当保证合法性
+        '''
+        cost_classes = {
+            "ExamCostType_ExamReview": "好印象",
+            "ExamCostType_ExamCardPlayAggressive": "やる気",
+            "ExamCostType_ExamLessonBuff": "集中",
+            "ExamCostType_ExamParameterBuff": "好調",
+            "ExamCostType_Unknown": "无"
+        }
+        if cost_type == "ExamCostType_Unknown":
+            return
+        if cost_type == "ExamCostType_ExamReview":
+            self.review -= cost_value
+        elif cost_type == "ExamCostType_ExamCardPlayAggressive":
+            self.card_play_aggressive -= cost_value
+        elif cost_type == "ExamCostType_ExamLessonBuff":
+            self.lesson_buff -= cost_value
+        elif cost_type == "ExamCostType_ExamParameterBuff":
+            self.parameter_buff -= cost_value
+
+    def lesson_review(self):
+        '''
+        好印象加分
+        '''
+        self.lesson += self.review
+        self.lesson = min(self.lesson, self.target_lesson)
+
+    def check_playable(self, card_idx):
+        '''
+        检查打牌的合法性
+        1. 体力消耗合法性
+        2. 特殊资源消耗合法性
+        3. 选择在手牌中的牌
+        4. 检查trigger
+        '''
+        if card_idx >= len(self.hand):
+            return False
+        card = self.hand[card_idx]
+        
+        cost_stamina = card.stamina
+        force_stamina = card.forceStamina
+        if self.stamina_consumption_add:
+            cost_stamina = math.ceil(cost_stamina * 2)
+            force_stamina = math.ceil(force_stamina * 2)
+        if self.stamina_consumption_down:
+            cost_stamina = math.ceil(cost_stamina / 2)
+            force_stamina = math.ceil(force_stamina / 2)
+        if self.stamina_consumption_down_fix:
+            cost_stamina -= self.stamina_consumption_down_fix
+            force_stamina -= self.stamina_consumption_down_fix
+        cost_stamina = max(0, cost_stamina)
+        force_stamina = max(0, force_stamina)
+        if self.block + self.stamina < cost_stamina:
+            return False
+        if self.stamina < force_stamina:
+            return False
+
+        if triggers_future.check_trigger_start_turn(card.playableTrigger, self) == False:
+            return False
+
+        return True
+
+
+    def discard_card(self, card_idx):
+        '''
+        弃牌
+        '''
+        if self.hand[card_idx].playMovePositionType == "ProduceCardMovePositionType_Lost":
+            self.exile.append(self.hand.pop(card_idx))
+        else:
+            self.discard.append(self.hand.pop(card_idx))
+
 
     def start_turn(self):
         '''
@@ -126,6 +253,20 @@ class Game:
         self.timer_card_draw[0] = self.timer_card_draw[1]
         self.timer_card_draw[1] = 0
 
+        self.playable_value = 1
+        # if self.timer_lesson:
+        #     effects_future.effect_exam_lesson(self.timer_lesson, self)
+
+
+
+        self.draw(self.card_draw)
+
+        if self.timer_card_upgrade[0]:
+            for i in range(len(self.hand)):
+                self.hand[i] = self.hand[i].upgradeCard
+            self.timer_card_upgrade[0] = self.timer_card_upgrade[1]
+            self.timer_card_upgrade[1] = 0
+
         pass
 
     def play_card(self,card_idx):
@@ -134,7 +275,19 @@ class Game:
         1. 结算效果
         2. 结算是否结束回合
         '''
-        pass
+        assert card_idx < len(self.hand)
+        card = self.hand[card_idx]
+        effects = card.playEffects
+        # 卡牌消耗结算
+        self.cost_stamina(card.stamina)
+        self.cost_stamina_force(card.forceStamina)
+        self.cost_special(card.costType, card.costValue)
+        # 卡牌效果结算
+        effects_future.effect_roll(effects, self)
+        
+        # 弃牌/除外
+        self.discard_card(card_idx)
+        self.playable_value -= 1
     
     def turn_process(self):
         '''
@@ -144,11 +297,72 @@ class Game:
         2. 结算效果
         3. 结算是否结束回合
         '''
+        while self.playable_value > 0:
+            # pesudo input
+
+            self.playable_value -= 1
         pass
 
-    def end_turn():
+    def end_turn(self):
         '''
         结束回合
-        1. 结算
+        1. 弃牌
+        2. 所有在回合结束时的效果结算（好印象加分）
+        3. 所有在回合结束时减少的timer结算
         '''
+        while len(self.hand) > 0:
+            self.discard_card(0)
+
+        self.turn_left -= 1
+        self.current_turn += 1
+        if self.turn_left == 0:
+            self.is_over = True
+        
+        # 好印象加分
+        self.lesson_review()        
+
+        # 结算timer
+        if self.review:
+            if self.review_Flag:
+                self.review_Flag = False
+            else:
+                self.review -= 1
+        if self.parameter_buff:
+            if self.parameter_buff_Flag:
+                self.parameter_buff_Flag = False
+            else:
+                self.parameter_buff -= 1
+        
+        if self.parameter_buff_multiple_per_turn:
+            if self.parameter_buff_multiple_per_turn_Flag:
+                self.parameter_buff_multiple_per_turn_Flag = False
+            else:
+                self.parameter_buff_multiple_per_turn -= 1
+
+        if self.anti_debuff:
+            if self.anti_debuff_Flag:
+                self.anti_debuff_Flag = False
+            else:
+                self.anti_debuff -= 1
+        
+        if self.block_restriction:
+            if self.block_restriction_Flag:
+                self.block_restriction_Flag = False
+            else:
+                self.block_restriction -= 1
+        if self.stamina_consumption_add:
+            if self.stamina_consumption_add_Flag:
+                self.stamina_consumption_add_Flag = False
+            else:
+                self.stamina_consumption_add -= 1
+        if self.stamina_consumption_down:
+            if self.stamina_consumption_down_Flag:
+                self.stamina_consumption_down_Flag = False
+            else:
+                self.stamina_consumption_down -= 1
+
+
+
         pass
+
+

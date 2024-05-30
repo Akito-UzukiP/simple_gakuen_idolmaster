@@ -1,4 +1,5 @@
 import numpy as np
+import random
 try:
     from . import triggers_future, effects_future
 except:
@@ -49,6 +50,7 @@ class Card:
         self.playEffects = []
 
         self.upgradeCard = None
+        self.downgradeCard = None
     def __str__(self):
         name = self.name
         rarity = self.rarity
@@ -57,9 +59,9 @@ class Card:
         costType = self.costType
         costValue =  self.costValue
         desc_str = self.descriptions
-        return_text = f"计划类型: {plan_types[self.planType]}\n"
-        return_text += f"类别: {category_types[self.category]}\n"
-        return_text +=  f"{name}({rarity})\n体力: {stamina} 直接体力: {forceStamina}\n"
+        # return_text = f"计划类型: {plan_types[self.planType]}\n"
+        # return_text += f"类别: {category_types[self.category]}\n"
+        return_text =  f"{name}({rarity})\n体力: {stamina} 直接体力: {forceStamina}\n"
         if self.isInitial:
             return_text += "レッスン 開始時手札に入る \n"
         if costType != "ExamCostType_Unknown":
@@ -111,27 +113,96 @@ def read_card(card_json:dict):
 
     return card
 
-
 def find_upgrade_card(card:Card, all_cards):
+    # 还没加入支援卡，所以不考虑++的情况
+    if card.name[-1] == "+":
+        return card
     for c in all_cards:
         if c.name == card.name + "+":
             return c
     return None
 
+import unicodedata
+
+def get_display_width(text):
+    """
+    计算字符串的显示宽度，考虑全角和半角字符。
+    """
+    width = 0
+    for char in text:
+        if unicodedata.east_asian_width(char) in ('F', 'W', 'A'):
+            width += 2
+        else:
+            width += 1
+    return width
+
+def print_cards(cards, card_per_line: int = 3, max_symbols_per_line: int = 50):
+    """
+    对于多张卡牌，漂亮地打印出来
+    """
+    card_strs = [str(card) for card in cards]
+    card_strs_split = [card_str.split("\n") for card_str in card_strs]
+
+    # Ensure each card is within max_symbols_per_line
+    for idx, card_split in enumerate(card_strs_split):
+        card_strs_split[idx] = [line[:max_symbols_per_line] for line in card_split]
+
+    max_length = max([max([get_display_width(line) for line in card_str_split]) for card_str_split in card_strs_split])
+    max_lines = max([len(card_str_split) for card_str_split in card_strs_split])
+
+    output_str = "+" + ("-" * (max_length + 2) + "+") * card_per_line + "\n"
+    printed_cards = 0
+
+    while printed_cards < len(cards):
+        for i in range(max_lines):
+            output_str += "|"
+            for j in range(card_per_line):
+                card_idx = printed_cards + j
+                if card_idx < len(cards):
+                    if i < len(card_strs_split[card_idx]):
+                        line = card_strs_split[card_idx][i]
+                        display_width = get_display_width(line)
+                        output_str += " " + line
+                        output_str += " " * (max_length - display_width + 1)
+                    else:
+                        output_str += " " * (max_length + 2)
+                else:
+                    output_str += " " * (max_length + 2)
+                output_str += "|"
+            output_str += "\n"
+        output_str += "+" + ("-" * (max_length + 2) + "+") * card_per_line + "\n"
+        printed_cards += card_per_line
+
+    return output_str
+
+
+import yaml
+all_cards = []
+with open("yaml/ProduceCard.yaml", "r", encoding='UTF-8') as f:
+    data = yaml.load(f, Loader=yaml.FullLoader)
+for card in data:
+    if "++" in card.get("name"):
+        continue
+    all_cards.append(read_card(card))
+all_upgrade_cards = []
+for card in all_cards:
+    upgrade_card = find_upgrade_card(card, all_cards)
+    card.upgradeCard = upgrade_card
+    upgrade_card.downgradeCard = card
+for card in all_cards:
+    if card.downgradeCard is None:
+        card.downgradeCard = card
+
+all_logic_cards = [i for i in all_cards if i.planType == "ProducePlanType_Plan2"]
+all_sense_cards = [i for i in all_cards if i.planType == "ProducePlanType_Plan1"]
+
+def random_logic_card():
+    return random.choice(all_logic_cards)
+def random_sense_card():
+    return random.choice(all_sense_cards)
+
 
 if __name__ == "__main__":
-    import yaml
-    all_cards = []
-    with open("yaml/ProduceCard.yaml", "r", encoding='UTF-8') as f:
-        data = yaml.load(f, Loader=yaml.FullLoader)
-    for card in data:
-        all_cards.append(read_card(card))
-    all_upgrade_cards = []
-    for card in all_cards:
-        upgrade_card = find_upgrade_card(card, all_cards)
-        card.upgradeCard = upgrade_card
-    for card in all_cards:
-        print(card)
-        print()
+    print(print_cards(all_logic_cards[:5], 3))
 
 # id,upgradeCount,name,assetId,isCharacterAsset,rarity,planType,category,stamina,forceStamina,costType,costValue,playProduceExamTriggerId,playEffects,playMovePositionType,moveEffectTriggerType,moveProduceExamEffectIds,isEndTurnLost,isInitial,isRestrict,produceCardStatusEnchantId,searchTag,libraryHidden,noDeckDuplication,descriptions,unlockProducerLevel,rentalUnlockProducerLevel,evaluation,originIdolCardId,originSupportCardId,isInitialDeckProduceCard,effectGroupIds,viewStartTime,isLimited,order

@@ -4,6 +4,7 @@ try:
     from . import triggers_future
 except:
     import triggers_future
+from typing import Any
 # e_effect-exam_block-(\d+) ->元气增加
 exam_block = re.compile(r"e_effect-exam_block-(\d+)$")
 def match_exam_block(string):
@@ -53,13 +54,6 @@ def match_exam_lesson_depend_review(string):
     default_values = [0, 0]
     if exam_lesson_depend_review.match(string):
         return [int(i) for i in exam_lesson_depend_review.match(string).groups(default_values)]
-    return default_values
-# e_effect-exam_lesson_depend_aggressive-(\d+)-(\d+) -> 依赖やる気加分，加分次数
-exam_lesson_depend_aggressive = re.compile(r"e_effect-exam_lesson_depend_aggressive-(\d+)-(\d+)$")
-def match_exam_lesson_depend_aggressive(string):
-    default_values = [0, 0]
-    if exam_lesson_depend_aggressive.match(string):
-        return [int(i) for i in exam_lesson_depend_aggressive.match(string).groups(default_values)]
     return default_values
 # e_effect-exam_stamina_consumption_add-(\d+) -> 体力消耗增加，增加回合数
 exam_stamina_consumption_add = re.compile(r"e_effect-exam_stamina_consumption_add-(\d+)$")
@@ -243,7 +237,7 @@ def match_e_effects(string):
     return [0]
 
 all_res = [exam_block, exam_card_play_aggressive, exam_lesson, exam_review, 
-           exam_lesson_depend_block, exam_lesson_depend_aggressive, 
+           exam_lesson_depend_block, 
            exam_stamina_consumption_add, exam_stamina_consumption_down, exam_stamina_consumption_down_fix, 
             exam_stamina_recover_fix_once, exam_parameter_buff, exam_lesson_buff, 
            exam_multiple_lesson_buff_lesson, exam_lesson_depend_exam_card_play_aggressive,exam_parameter_buff_multiple_per_turn, 
@@ -261,7 +255,6 @@ def match_all_effects(string):
     all_results.append(match_exam_lesson(string))# 加分
     all_results.append(match_exam_review(string))# 好印象增加
     all_results.append(match_exam_lesson_depend_block(string))# 依赖元气加分
-    all_results.append(match_exam_lesson_depend_aggressive(string))# 依赖やる気加分
     all_results.append(match_exam_stamina_consumption_add(string))# 体力消耗增加
     all_results.append(match_exam_stamina_consumption_down(string))# 体力消耗减少
     all_results.append(match_exam_stamina_consumption_down_fix(string))# 固定体力消耗减少
@@ -291,7 +284,7 @@ def match_all_effects(string):
 
 def effect_exam_block(effects: list[int], game):
     # 如果游戏没有元气增加无效回合数，则增加元气
-    if game.exam_block_restriction == 0:
+    if game.block_restriction == 0:
         game.block += effects[0] + game.card_play_aggressive
 
 def effect_exam_card_play_aggressive(effects: list[int], game):
@@ -313,44 +306,6 @@ def effect_exam_review(effects: list[int], game):
     game.review += effects[3]
 
 
-# depend的都不用考虑集中和好调，它们不会同时存在
-def effect_exam_lesson_depend_block(effects: list[int], game):
-    num = effects[4]
-    if game.block > 0:
-        num += game.block * effects[5]/1000
-    num = math.ceil(num)
-    game.lesson += num
-
-def effect_exam_lesson_depend_aggressive(effects: list[int], game):
-    num = effects[8]
-    if game.card_play_aggressive > 0:
-        num += game.card_play_aggressive * effects[9]
-    num = math.ceil(num)
-    game.lesson += num
-
-def effect_exam_stamina_consumption_add(effects: list[int], game):
-    game.stamina_consumption_add += effects[10]
-
-def effect_exam_stamina_consumption_down(effects: list[int], game):
-    game.stamina_consumption_down += effects[11]
-
-def effect_exam_stamina_consumption_down_fix(effects: list[int], game):
-    game.stamina_consumption_down_fix += effects[12]
-
-def effect_exam_stamina_recover_fix_once(effects: list[int], game):
-    game.stamina += effects[13]
-
-def effect_exam_parameter_buff(effects: list[int], game):
-    game.parameter_buff += effects[14]
-
-def effect_exam_lesson_buff(effects: list[int], game):
-    game.lesson_buff += effects[15]
-
-def effect_exam_multiple_lesson_buff_lesson(effects: list[int], game):
-    game.lesson_buff += effects[16]
-
-def effect_exam_lesson_depend_exam_card_play_aggressive(effects: list[int], game):
-    pass
 
 #print(len(match_all_effects("e_effect-exam_status_enchant-inf-enchant-p_card-01-men-2_034-enc01")))
 
@@ -402,7 +357,6 @@ class Effect:
         self.exam_lesson = [0, 0]
         self.exam_review = [0]
         self.exam_lesson_depend_block = [0,0,0]
-        self.exam_lesson_depend_aggresive = [0,0]
         self.exam_stamina_consumption_add = [0]
         self.exam_stamina_consumption_down = [0]
         self.exam_stamina_consumption_down_fix = [0]
@@ -437,31 +391,30 @@ class Effect:
         self.exam_lesson = effects[2]
         self.exam_review = effects[3]
         self.exam_lesson_depend_block = effects[4]
-        self.exam_lesson_depend_aggressive = effects[5]
-        self.exam_stamina_consumption_add = effects[6]
-        self.exam_stamina_consumption_down = effects[7]
-        self.exam_stamina_consumption_down_fix = effects[8]
-        self.exam_stamina_recover_fix_once = effects[9]
-        self.exam_parameter_buff = effects[10]
-        self.exam_lesson_buff = effects[11]
-        self.exam_multiple_lesson_buff_lesson = effects[12]
-        self.exam_lesson_depend_exam_card_play_aggressive = effects[13]
-        self.exam_parameter_buff_multiple_per_turn = effects[14]
-        self.exam_lesson_depend_exam_review = effects[15]
-        self.exam_effect_timer_draw = effects[16]
-        self.exam_effect_timer_lesson = effects[17]
-        self.exam_effect_timer_card_upgrade = effects[18]
-        self.exam_extra_turn = effects[19]
-        self.exam_playable_value_add = effects[20]
-        self.exam_hand_grave_count_card_draw = effects[21]
-        self.exam_card_draw = effects[22]
-        self.exam_card_create_search = effects[23]
-        self.exam_anti_debuff = effects[24]
-        self.exam_block_restriction = effects[25]
-        self.exam_search_effect_play_count_buff = effects[26]
-        self.exam_card_upgrade = effects[27]
-        self.exam_status_enchant = effects[28]
-
+        # self.exam_lesson_depend_aggressive = effects[5]  # 去掉这一行
+        self.exam_stamina_consumption_add = effects[5]
+        self.exam_stamina_consumption_down = effects[6]
+        self.exam_stamina_consumption_down_fix = effects[7]
+        self.exam_stamina_recover_fix_once = effects[8]
+        self.exam_parameter_buff = effects[9]
+        self.exam_lesson_buff = effects[10]
+        self.exam_multiple_lesson_buff_lesson = effects[11]
+        self.exam_lesson_depend_exam_card_play_aggressive = effects[12]
+        self.exam_parameter_buff_multiple_per_turn = effects[13]
+        self.exam_lesson_depend_exam_review = effects[14]
+        self.exam_effect_timer_draw = effects[15]
+        self.exam_effect_timer_lesson = effects[16]
+        self.exam_effect_timer_card_upgrade = effects[17]
+        self.exam_extra_turn = effects[18]
+        self.exam_playable_value_add = effects[19]
+        self.exam_hand_grave_count_card_draw = effects[20]
+        self.exam_card_draw = effects[21]
+        self.exam_card_create_search = effects[22]
+        self.exam_anti_debuff = effects[23]
+        self.exam_block_restriction = effects[24]
+        self.exam_search_effect_play_count_buff = effects[25]
+        self.exam_card_upgrade = effects[26]
+        self.exam_status_enchant = effects[27]
 
 
         self.card_play_trigger = triggers
@@ -474,7 +427,6 @@ class Effect:
         _obs.extend(self.exam_lesson)
         _obs.extend(self.exam_review)
         _obs.extend(self.exam_lesson_depend_block)
-        _obs.extend(self.exam_lesson_depend_aggresive)
         _obs.extend(self.exam_stamina_consumption_add)
         _obs.extend(self.exam_stamina_consumption_down)
         _obs.extend(self.exam_stamina_consumption_down_fix)
@@ -528,8 +480,7 @@ class Effect:
         str_ += "好印象 + " + str(self.exam_review[0]) + "\n" if sum(self.exam_review) > 0 else ""
         # 
         str_ += "元気の " + str(self.exam_lesson_depend_block[0]/10) + " %分パラメータ上昇" + str(self.exam_lesson_depend_block[2]) + " 回\n" if sum(self.exam_lesson_depend_block) > 0 else ""
-        str_ += "その後、元気を " + str(self.exam_lesson_depend_block[1]) + " %減少\n" if self.exam_lesson_depend_block[1] > 0 else ""
-        str_ += "やる気の " + str(self.exam_lesson_depend_aggresive[0]/10) + " %を増加、" + str(self.exam_lesson_depend_aggresive[1]) + " 回\n" if sum(self.exam_lesson_depend_aggresive) > 0 else ""
+        str_ += "その後、元気を " + str(self.exam_lesson_depend_block[1]/10) + " %減少\n" if self.exam_lesson_depend_block[1] > 0 else ""
         str_ += "体力消耗UP + " + str(self.exam_stamina_consumption_add[0]) + "ターン\n" if sum(self.exam_stamina_consumption_add) > 0 else ""
         str_ += "体力消耗DOWN + " + str(self.exam_stamina_consumption_down[0]) + "ターン\n" if sum(self.exam_stamina_consumption_down) > 0 else ""
         str_ += "直接体力消耗DOWN + " + str(self.exam_stamina_consumption_down_fix[0]) + "\n" if sum(self.exam_stamina_consumption_down_fix) > 0 else ""
@@ -593,10 +544,201 @@ class Effect:
     
     def __repr__(self):
         return self.__str__()
+    
 
-        
-            
 
+# 1. 元气增加
+def effect_exam_block(effect: Effect, game: Any):
+    if game.block_restriction == 0:
+        game.block += effect.exam_block[0] + game.card_play_aggressive
+
+# 2. やる気增加
+def effect_exam_card_play_aggressive(effect: Effect, game: Any):
+    game.card_play_aggressive += effect.exam_card_play_aggressive[0]
+
+# 3. 加分
+def effect_exam_lesson(effect: Effect, game: Any):
+    for _ in range(effect.exam_lesson[1]):
+        num = effect.exam_lesson[0]
+        if game.lesson_buff > 0:
+            num += game.lesson_buff
+        mul = 1.0
+        if game.parameter_buff > 0:
+            mul += 0.5
+        if game.parameter_buff_multiple_per_turn > 0:
+            mul += game.parameter_buff * 0.1
+        num = math.ceil(num * mul)
+        game.lesson += num
+    game.lesson = min(game.lesson, game.target_lesson)
+
+# 4. 好印象增加
+def effect_exam_review(effect: Effect, game: Any):
+    game.review += effect.exam_review[0]
+
+def effect_exam_depend(num, percent, time, game):
+    #print(num, percent, time, game.lesson, game.target_lesson)
+    for i in range(time):
+        num = math.ceil(num * (percent/1000))
+        game.lesson += num
+    game.lesson = min(game.lesson, game.target_lesson)
+
+# 5. 依赖元气加分
+def effect_exam_lesson_depend_block(effect: Effect, game: Any):
+    effect_exam_depend(game.block, effect.exam_lesson_depend_block[0], effect.exam_lesson_depend_block[2], game)
+    game.block = math.ceil(game.block * (1 - effect.exam_lesson_depend_block[1] / 1000))
+    
+# 7. 体力消耗增加
+def effect_exam_stamina_consumption_add(effect: Effect, game: Any):
+    if game.stamina_consumption_add == 0:
+        game.stamina_consumption_add_flag = True
+    game.stamina_consumption_add += effect.exam_stamina_consumption_add[0]
+
+# 8. 体力消耗减少
+def effect_exam_stamina_consumption_down(effect: Effect, game: Any):
+    if game.stamina_consumption_down == 0:
+        game.stamina_consumption_down_flag = True
+    game.stamina_consumption_down += effect.exam_stamina_consumption_down[0]
+
+# 9. 直接体力消耗减少
+def effect_exam_stamina_consumption_down_fix(effect: Effect, game: Any):
+    game.stamina_consumption_down_fix += effect.exam_stamina_consumption_down_fix[0]
+
+def effect_exam_stamina_recover_fix_once(effect: Effect, game: Any):
+    game.stamina += effect.exam_stamina_recover_fix_once[0]
+    game.stamina = min(game.stamina, game.max_stamina)
+# 好调
+def effect_exam_parameter_buff(effect: Effect, game: Any):
+    if game.parameter_buff == 0:
+        game.parameter_buff_flag = True
+    game.parameter_buff += effect.exam_parameter_buff[0]
+# 集中
+def effect_exam_lesson_buff(effect: Effect, game: Any):
+    game.lesson_buff += effect.exam_lesson_buff[0]
+
+# 集中倍率增加的加分
+def effect_exam_multiple_lesson_buff_lesson(effect: Effect, game: Any):
+    for _ in range(effect.exam_multiple_lesson_buff_lesson[2]):
+        num = effect.exam_multiple_lesson_buff_lesson[0]
+        if game.lesson_buff > 0:
+            num += (game.lesson_buff) * (effect.exam_multiple_lesson_buff_lesson[1] / 1000)
+        mul = 1.0
+        if game.parameter_buff > 0:
+            mul += 0.5
+        if game.parameter_buff_multiple_per_turn > 0:
+            mul += game.parameter_buff * 0.1
+        num = math.ceil(num * mul)
+        game.lesson += num
+    game.lesson = min(game.lesson, game.target_lesson)
+def effect_exam_lesson_depend_exam_card_play_aggressive(effect: Effect, game: Any):
+    effect_exam_depend(game.card_play_aggressive, effect.exam_lesson_depend_exam_card_play_aggressive[0], effect.exam_lesson_depend_exam_card_play_aggressive[1], game)
+# 绝好调回合数
+def effect_exam_parameter_buff_multiple_per_turn(effect: Effect, game: Any):
+    if sum(effect.exam_parameter_buff_multiple_per_turn) == 0:
+        return
+    if game.parameter_buff_multiple_per_turn == 0:
+        game.parameter_buff_multiple_per_turn_flag = True
+    game.parameter_buff_multiple_per_turn += effect.exam_parameter_buff_multiple_per_turn[0]
+
+def effect_exam_lesson_depend_exam_review(effect: Effect, game: Any):
+    effect_exam_depend(game.review, effect.exam_lesson_depend_exam_review[0], effect.exam_lesson_depend_exam_review[1], game)
+
+def effect_exam_effect_timer_draw(effect: Effect, game: Any):
+    # e_effect-exam_effect_timer-(\d+)-(\d+)-e_effect-exam_card_draw-(\d+) -> 效果回合数，发动次数，抽卡次数
+    for i in range(effect.exam_effect_timer_draw[0]):
+        game.timer_draw[i] += effect.exam_effect_timer_draw[2] * effect.exam_effect_timer_draw[1]
+
+def effect_exam_effect_timer_lesson(effect: Effect, game: Any):
+    # e_effect-exam_effect_timer-(\d+)-(\d+)-e_effect-exam_lesson-(\d+)-(\d+) -> 效果回合数，发动次数，加分，加分次数
+    # 保证只有1回合，次数只有1，加分次数只有1
+    game.timer_lesson += effect.exam_effect_timer_lesson[2]
+
+def effect_exam_effect_timer_card_upgrade(effect: Effect, game: Any):
+    for i in range(effect.exam_effect_timer_card_upgrade[0]):
+        game.timer_card_upgrade[i] += 1
+
+def effect_exam_extra_turn(effect: Effect, game: Any):
+    game.turn_left += effect.exam_extra_turn[0]
+
+def effect_exam_playable_value_add(effect: Effect, game: Any):
+    game.playable_value += effect.exam_playable_value_add[0]
+
+def effect_exam_hand_grave_count_card_draw(effect: Effect, game: Any):
+    if sum(effect.exam_hand_grave_count_card_draw) == 0:
+        return
+    game.hand_grave_count_card_draw = True
+
+def effect_exam_card_draw(effect: Effect, game: Any):
+    game.card_draw += effect.exam_card_draw[0]
+
+def effect_exam_card_create_search(effect: Effect, game: Any):
+    if sum(effect.exam_card_create_search) == 0:
+        return
+    game.card_create_search = True
+
+def effect_exam_anti_debuff(effect: Effect, game: Any):
+    if effect.exam_anti_debuff[0] == 0:
+        return
+    if game.anti_debuff == 0:
+        game.anti_debuff_flag = True
+    game.anti_debuff += effect.exam_anti_debuff[0]
+
+def effect_exam_block_restriction(effect: Effect, game: Any):
+    if effect.exam_block_restriction[0] == 0:
+        return
+    if game.block_restriction == 0:
+        game.block_restriction_flag = True
+    game.block_restriction += effect.exam_block_restriction[0]
+
+def effect_exam_search_effect_play_count_buff(effect: Effect, game: Any):
+    if sum(effect.exam_search_effect_play_count_buff) == 0:
+        return
+    game.search_effect_play_count_buff = True
+
+def effect_exam_card_upgrade(effect: Effect, game: Any):
+    if sum(effect.exam_card_upgrade) == 0:
+        return
+    game.card_upgrade = True
+
+def effect_exam_status_enchant(effect: Effect, game: Any):
+    # 转化为one-hot
+    tmp = [0] * 8
+    tmp[effect.exam_status_enchant[0] - 1] = 1
+    game.status_enchant = tmp
+def effect_roll(effects: list[Effect], game):
+    pass
+    for effect in effects:
+        if not triggers_future.check_trigger_exam_card(effect.card_play_trigger, game):
+            continue
+        #print(effect)
+        effect_exam_block(effect, game)
+        effect_exam_card_play_aggressive(effect, game)
+        effect_exam_lesson(effect, game)
+        effect_exam_review(effect, game)
+        effect_exam_lesson_depend_block(effect, game)
+        effect_exam_stamina_consumption_add(effect, game)
+        effect_exam_stamina_consumption_down(effect, game)
+        effect_exam_stamina_consumption_down_fix(effect, game)
+        effect_exam_stamina_recover_fix_once(effect, game)
+        effect_exam_parameter_buff(effect, game)
+        effect_exam_lesson_buff(effect, game)
+        effect_exam_multiple_lesson_buff_lesson(effect, game)
+        effect_exam_lesson_depend_exam_card_play_aggressive(effect, game)
+        effect_exam_parameter_buff_multiple_per_turn(effect, game)
+        effect_exam_lesson_depend_exam_review(effect, game)
+        effect_exam_effect_timer_draw(effect, game)
+        effect_exam_effect_timer_lesson(effect, game)
+        effect_exam_effect_timer_card_upgrade(effect, game)
+        effect_exam_extra_turn(effect, game)
+        effect_exam_playable_value_add(effect, game)
+        effect_exam_hand_grave_count_card_draw(effect, game)
+        effect_exam_card_draw(effect, game)
+        effect_exam_card_create_search(effect, game)
+        effect_exam_anti_debuff(effect, game)
+        effect_exam_block_restriction(effect, game)
+        effect_exam_search_effect_play_count_buff(effect, game)
+        effect_exam_card_upgrade(effect, game)
+        effect_exam_status_enchant(effect, game)
+        #print(game)
 
 
 def read_effect_of_card(card: dict):
