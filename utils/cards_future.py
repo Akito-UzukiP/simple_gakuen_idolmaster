@@ -51,6 +51,8 @@ class Card:
 
         self.upgradeCard = None
         self.downgradeCard = None
+        self.obs_ = None
+
     def __str__(self):
         name = self.name
         rarity = self.rarity
@@ -84,6 +86,32 @@ class Card:
 
     def __repr__(self):
         return self.__str__()
+    
+    def observe(self):
+        if self.obs_:
+            return self.obs_
+        obs_ = []
+        rarity = ["N", "R", "Sr", "Ssr"].index(self.rarity)
+        obs_.append(rarity)
+        planType = ["ProducePlanType_Plan1", "ProducePlanType_Plan2", "ProducePlanType_Common"].index(self.planType)
+        obs_.append(planType)
+        category = ["ProduceCardCategory_MentalSkill", "ProduceCardCategory_ActiveSkill", "ProduceCardCategory_Trouble"].index(self.category)
+        obs_.append(category)
+        obs_.append(self.stamina)
+        obs_.append(self.forceStamina)
+        obs_.append(self.costValue)
+        obs_.append(["ExamCostType_ExamReview", "ExamCostType_ExamCardPlayAggressive", "ExamCostType_ExamLessonBuff", "ExamCostType_ExamParameterBuff", "ExamCostType_Unknown"].index(self.costType))
+        obs_.append(1 if self.noDeckDuplication else 0)
+        obs_.append(1 if self.isLimited else 0)
+        obs_.append(1 if self.isInitialDeckProduceCard else 0)
+        obs_.append(1 if self.isRestrict else 0)
+        obs_.append(1 if self.isInitial else 0)
+        obs_.append(1 if self.isEndTurnLost else 0)
+        obs_.append(["ProduceCardMovePositionType_Grave", "ProduceCardMovePositionType_Lost"].index(self.playMovePositionType))
+        obs_.append([i.observe() for i in self.playEffects])
+        self.obs_ = obs_
+        return obs_
+
 
 def read_card(card_json:dict):
     card = Card()
@@ -211,8 +239,14 @@ def search_card_by_name(name:str):
         if card.name == name:
             return card
     return None
+def sc(name:str):
+    return search_card_by_name(name)
+kotone_deck = [sc("アピールの基本")] * 2 + [sc("ポーズの基本")] + [sc("表現の基本")] * 2 + [sc("目線の基本")] * 2 + [sc("可愛い仕草")] + [sc("よそ見はダメ♪+")] + [sc("イメトレ")] + \
+    [sc("本番前夜+")] + [sc("やる気は満点")] * 3 + [sc("私がスター+")] + [sc("ふれあい")]*3 + [sc("幸せな時間")] + [sc("手拍子+")]
+
 
 if __name__ == "__main__":
-    print(print_cards(all_logic_cards[:5], 3))
+    print(kotone_deck)
 
 # id,upgradeCount,name,assetId,isCharacterAsset,rarity,planType,category,stamina,forceStamina,costType,costValue,playProduceExamTriggerId,playEffects,playMovePositionType,moveEffectTriggerType,moveProduceExamEffectIds,isEndTurnLost,isInitial,isRestrict,produceCardStatusEnchantId,searchTag,libraryHidden,noDeckDuplication,descriptions,unlockProducerLevel,rentalUnlockProducerLevel,evaluation,originIdolCardId,originSupportCardId,isInitialDeckProduceCard,effectGroupIds,viewStartTime,isLimited,order
+

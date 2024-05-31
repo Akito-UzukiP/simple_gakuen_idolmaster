@@ -1,9 +1,14 @@
 import random
 import numpy as np
 import math
-from . import triggers_future, effects_future, cards_future
-from .cards_future import Card
-from .effects_future import Effect
+try:
+    from . import triggers_future, effects_future, cards_future
+    from .cards_future import Card
+    from .effects_future import Effect
+except:
+    import triggers_future, effects_future, cards_future
+    from cards_future import Card
+    from effects_future import Effect
 # except:
 #     import triggers_future, effects_future, cards_future
 #     from cards_future import Card
@@ -42,16 +47,16 @@ class Game:
     例如：
 
     '''
-    def __init__(self):
+    def __init__(self, plan = "ProducePlanType_Plan2", max_stamina = 30, target_lesson = 300, turn_left = 12):
         self.is_over = False
         self.plan = "ProducePlanType_Plan2" # ロジック
-        self.max_stamina = 30
-        self.stamina = 30
+        self.max_stamina = max_stamina
+        self.stamina = max_stamina
         self.block = 0
         self.card_play_aggressive = 0
         self.lesson = 0
-        self.target_lesson = 300
-        self.turn_left = 12
+        self.target_lesson = target_lesson
+        self.turn_left = turn_left
         self.current_turn = 0
         self.first_turn = True
         self.review = 0
@@ -225,6 +230,15 @@ class Game:
             cost -= self.stamina_consumption_down_fix
         cost = max(0, cost)
         self.stamina -= cost
+
+    def shuffle_all_to_deck(self):
+        '''
+        将所有牌堆洗入牌库
+        '''
+        self.deck = self.deck + self.discard + self.exile
+        self.discard = []
+        self.exile = []
+        random.shuffle(self.deck)
 
     def cost_special(self, cost_type, cost_value):
         '''
@@ -481,5 +495,56 @@ class Game:
         self.is_over = self.check_game_end()
 
         pass
+
+    def observe(self):
+        '''
+        观察
+        '''
+        obs_ = []
+        obs_.append(self.turn_left)
+        obs_.append(self.max_stamina)
+        obs_.append(self.stamina)
+        obs_.append(self.block)
+        obs_.append(self.card_play_aggressive)
+        obs_.append(self.target_lesson)
+        obs_.append(self.lesson)
+        obs_.append(self.review)
+        obs_.append(self.lesson_buff)
+        obs_.append(self.parameter_buff)
+        obs_.append(self.parameter_buff_multiple_per_turn)
+        obs_.append(self.playable_value)
+        obs_.append(self.card_draw)
+        obs_.append(self.stamina_consumption_add)
+        obs_.append(self.stamina_consumption_down)
+        obs_.append(self.stamina_consumption_down_fix)
+        obs_.append(self.anti_debuff)
+        obs_.append(self.block_restriction)
+        obs_.extend(self.timer_card_draw)
+        obs_.append(self.timer_lesson)
+        obs_.extend(self.timer_card_upgrade)
+        obs_.append(1 if self.search_effect_play_count_buff else 0)
+        obs_.extend(self.status_enchant)
+        deck_obs = []
+        for card in self.exile:
+            deck_obs.append([4] + card.observe())
+        for card in self.discard:
+            deck_obs.append([3] + card.observe())
+        for card in self.deck:
+            deck_obs.append([2] + card.observe())
+        for i, card in enumerate(self.hand):
+            deck_obs.append([1] + card.observe() if self.check_playable(i) else [0] + card.observe())
+        obs_.append(deck_obs)
+
+        game_info = obs_[:-1]
+        deck_info = obs_[-1]
+        obs = {
+            "game": np.array(game_info),
+            "card":[{
+                "info": np.array(i[:-1]),
+                "effect": np.array(i[-1])
+            } for i in deck_info]
+        }
+        return obs
+
 
 
