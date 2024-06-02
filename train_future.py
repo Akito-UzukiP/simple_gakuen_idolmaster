@@ -15,17 +15,17 @@ policy_kwargs = dict(
     features_extractor_class=agent_future.CustomExtractor,
     features_extractor_kwargs=dict(player_info_dim=player_info_dim, card_info_dim=card_info_dim, effect_info_dim=effect_info_dim, d_model=64, max_cards=max_cards, max_effects_per_card=max_effects_per_card))
 
-env = make_vec_env(env_future.GakuenIdolMasterEnv, n_envs=20)
-model = A2C(
-    "MultiInputPolicy",
-    env,
-    verbose=1,
-    tensorboard_log="./log",
-    device=get_device(),
-    policy_kwargs=policy_kwargs,
-    #batch_size=2048,  # 调整批量大小，使其成为 n_steps * n_envs 的因数
-)
-#model = PPO.load("ppo_gakuen_idol_master", device=get_device(), env=env, force_reset=True)
+env = make_vec_env(env_future.GakuenIdolMasterEnv, n_envs=20, env_kwargs={'max_cards': 8})
+# model = A2C(
+#     "MultiInputPolicy",
+#     env,
+#     verbose=1,
+#     tensorboard_log="./log",
+#     device=get_device(),
+#     policy_kwargs=policy_kwargs,
+#     #batch_size=2048,  # 调整批量大小，使其成为 n_steps * n_envs 的因数
+# )
+model = A2C.load("ppo_gakuen_idol_master", device=get_device(), env=env, force_reset=True)
 
-model.learn(total_timesteps=3276800*2, log_interval=1,reset_num_timesteps=False, progress_bar=True)
-model.save("ppo_gakuen_idol_master")
+model.learn(total_timesteps=3276800*10, log_interval=1,reset_num_timesteps=False, progress_bar=True)
+model.save("a2c_gakuen_idol_master")
