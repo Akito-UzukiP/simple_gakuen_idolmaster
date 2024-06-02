@@ -229,24 +229,107 @@ all_logic_cards = [i for i in all_cards if i.planType == "ProducePlanType_Plan2"
 all_sense_cards = [i for i in all_cards if i.planType == "ProducePlanType_Plan1"]
 all_logic_upgraded_ssr_cards = [i for i in all_logic_cards if i.rarity == "Ssr" and i.upgradeCard == i]
 all_sense_upgraded_ssr_cards = [i for i in all_sense_cards if i.rarity == "Ssr" and i.upgradeCard == i]
+all_logic_upgraded_cards = [i for i in all_logic_cards if i.upgradeCard == i]
+all_sense_upgraded_cards = [i for i in all_sense_cards if i.upgradeCard == i]
 def random_logic_card():
     return random.choice(all_logic_cards)
 def random_sense_card():
     return random.choice(all_sense_cards)
 
-def search_card_by_name(name:str):
+def search_card_by_name(name:str) -> Card:
     for card in all_cards:
         if card.name == name:
             return card
     return None
-def sc(name:str):
+def sc(name:str) -> Card:
     return search_card_by_name(name)
-kotone_deck = [sc("アピールの基本")] * 2 + [sc("ポーズの基本")] + [sc("表現の基本")] * 2 + [sc("目線の基本")] * 2 + [sc("可愛い仕草")] + [sc("よそ見はダメ♪+")] + [sc("イメトレ")] + \
-    [sc("本番前夜+")] + [sc("やる気は満点")] * 3 + [sc("私がスター+")] + [sc("ふれあい")]*3 + [sc("幸せな時間")] + [sc("手拍子+")]
+def add_card_to_deck(deck, card_name, num):
+    card = sc(card_name)
+    if card is None:
+        #print(f"没有找到卡牌{card_name}")
+        return deck, False
+    if card.noDeckDuplication:
+        if card in deck:
+            #print(f"卡牌{card_name}不能重复")
+            return deck, False
+        else:
+            deck += [card] * 1
+            return deck, True
+    else:
+        deck += [card] * num
+        return deck, True
+
+def create_deck(deck_dict):
+    deck = []
+    for card_name, num in deck_dict.items():
+        deck, success = add_card_to_deck(deck, card_name, num)
+        if not success:
+            return None
+    return deck 
 
 
+
+kotone_deck_dict = {
+    "アピールの基本": 2,
+    "ポーズの基本": 1,
+    "表現の基本": 2,
+    "目線の基本": 2,
+    "可愛い仕草": 1,
+    "よそ見はダメ♪+": 1,
+    "イメトレ": 1,
+    "本番前夜+": 1,
+    "やる気は満点": 3,
+    "私がスター+": 1,
+    "ふれあい": 3,
+    "幸せな時間": 1,
+    "手拍子+": 1,
+}
+kotone_deck = create_deck(kotone_deck_dict)
+#print(print_cards(kotone_deck, 3, 50))
+hiro_deck_dict = {
+    "アピールの基本": 2,
+    "ポーズの基本": 1,
+    "表現の基本": 2,
+    "意識の基本": 1,
+    "気分転換": 1,
+    "本気の趣味+": 1, # 固有
+    "イメトレ": 1,  # 继承
+    "本番前夜+": 1, # 继承
+    # "本番前夜": 2,
+    #"やる気は満点": 3,
+    "私がスター+": 1, # 继承
+    #"ふれあい": 1, 
+    # "幸せな時間": 1,
+    "元気な挨拶+": 1, # 继承
+   # "パステル気分+": 1,
+    # "あふれる思い出": 2,
+    # "あふれる思い出+": 3,
+    # "開花": 1, 
+    # "気合十分！+": 1,
+    # "えいえいおー": 2,
+    # "叶えたい夢+": 1,
+    # "光のステージ": 1,  
+    # "ゆるふわおしゃべり+": 1,
+}
+temp_deck = create_deck({
+    "私がスター+": 1,
+    "イメトレ": 2,
+    "幸せな時間": 1,
+    "本気の趣味+": 1,
+    "パステル気分+": 3,
+})
+hiro_deck = create_deck(hiro_deck_dict)
+
+def random_hiro_deck(additional_card = 15, plus_card = 5):
+    deck = hiro_deck.copy()
+    base_deck_length = len(deck)
+    while len(deck) < base_deck_length + additional_card:
+        deck, _ = add_card_to_deck(deck, random.choice(all_logic_cards).name, 1)
+    for i in range(plus_card):
+        deck, _ = add_card_to_deck(deck, random.choice(all_logic_upgraded_cards).name, 1)
+    return deck
 if __name__ == "__main__":
-    print(kotone_deck)
-
+    deck = random_hiro_deck()
+    print(print_cards(deck, 3, 50))
 # id,upgradeCount,name,assetId,isCharacterAsset,rarity,planType,category,stamina,forceStamina,costType,costValue,playProduceExamTriggerId,playEffects,playMovePositionType,moveEffectTriggerType,moveProduceExamEffectIds,isEndTurnLost,isInitial,isRestrict,produceCardStatusEnchantId,searchTag,libraryHidden,noDeckDuplication,descriptions,unlockProducerLevel,rentalUnlockProducerLevel,evaluation,originIdolCardId,originSupportCardId,isInitialDeckProduceCard,effectGroupIds,viewStartTime,isLimited,order
 

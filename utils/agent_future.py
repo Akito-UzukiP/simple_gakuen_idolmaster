@@ -1,10 +1,10 @@
 import torch
 import torch.nn as nn
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
-
+from stable_baselines3.common.policies import ActorCriticPolicy
 
 class CardLayer(nn.Module):
-    def __init__(self, card_info_dim, effect_info_dim, d_model, num_layers=2, max_effects_per_card=4, max_cards=40):
+    def __init__(self, card_info_dim, effect_info_dim, d_model, num_layers=2, max_effects_per_card=4, max_cards=5):
         '''
         '''
         super(CardLayer, self).__init__()
@@ -16,6 +16,7 @@ class CardLayer(nn.Module):
         self.d_model = d_model
         self.max_effects_per_card = max_effects_per_card
         self.max_cards = max_cards
+
 
     def forward(self, cards_batch):
         '''
@@ -31,24 +32,23 @@ class CardLayer(nn.Module):
         card_info = card_info + effect_info
         card_info = self.hidden_layer(card_info)
         card_info = torch.relu(card_info)
-        card_info = card_info.sum(dim=1) # -> (batch_size, d_model)
         return card_info
     
 class GameLayer(nn.Module):
-    def __init__(self, player_info_dim, card_info_dim, effect_info_dim, d_model):
+    def __init__(self, player_info_dim, card_info_dim, effect_info_dim, d_model, max_cards=5, max_effects_per_card=4):
         '''
         对玩家的信息进行处理，使用MLP，
         '''
         super(GameLayer, self).__init__()
 
         self.player_embedding = nn.Linear(player_info_dim, d_model)
-        self.card_layer = CardLayer(card_info_dim, effect_info_dim, d_model)
+        self.card_layer = CardLayer(card_info_dim, effect_info_dim, d_model, max_effects_per_card=max_effects_per_card, max_cards=max_cards)
+        self.max_cards = max_cards
         self.mlp = nn.Sequential(
-            nn.Linear(d_model, d_model),
+            nn.Linear(d_model * self.max_cards, d_model),
             nn.ReLU(),
-            nn.Linear(d_model, d_model),
-            nn.ReLU()
         ) 
+        self.d_model = d_model
         
     def forward(self, x):
         '''
@@ -71,16 +71,18 @@ class GameLayer(nn.Module):
 
         player_embedding = self.player_embedding(player_info)
         card_embedding = self.card_layer(cards_batch)
-
-        combined_embedding = player_embedding + card_embedding
-        output = self.mlp(combined_embedding)
+        #print(card_embedding.shape)
+        card_embedding = card_embedding.reshape(-1, self.max_cards * self.d_model)
+        card_embedding = self.mlp(card_embedding)
+        #print(card_embedding.shape, player_embedding.shape)
+        output = card_embedding + player_embedding
         
         return output
 
 class CustomExtractor(BaseFeaturesExtractor):
-    def __init__(self, observation_space, player_info_dim, card_info_dim, effect_info_dim, d_model):
+    def __init__(self, observation_space, player_info_dim, card_info_dim, effect_info_dim, d_model, max_cards=5, max_effects_per_card=4):
         super(CustomExtractor, self).__init__(observation_space, d_model)
-        self.game_layer = GameLayer(player_info_dim, card_info_dim, effect_info_dim, d_model)
+        self.game_layer = GameLayer(player_info_dim, card_info_dim, effect_info_dim, d_model, max_cards=max_cards, max_effects_per_card=max_effects_per_card)
         self.player_info_dim = player_info_dim
         self.card_info_dim = card_info_dim
         self.effect_info_dim = effect_info_dim
@@ -92,15 +94,20 @@ class CustomExtractor(BaseFeaturesExtractor):
         # }
         # return observation
         return self.game_layer(observations)
+    
+
+
+
 
 
 
 if __name__ == "__main__":
     import numpy as np
-    model = GameLayer(32, 15, 49, 128)
+    model = GameLayer(32, 15, 49, 128, 5, 4)
+    print(model)
     cards_batch = []
     for _ in range(256):
-        num_cards = 40
+        num_cards = 5
         cards = []
         for _ in range(num_cards):
             card_info = np.random.randn(15).astype(np.float32)

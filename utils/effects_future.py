@@ -174,7 +174,7 @@ def match_exam_card_draw(string):
     if exam_card_draw.match(string):
         return [int(i) for i in exam_card_draw.match(string).groups(default_values)]
     return default_values
-# e_effect-exam_card_create_search-0001-p_card_search-random-random_pool-p_random_pool-all-upgrade_1-1-hand-random-1_1 -> 上手一张SSR+
+# e_effect-exam_card_create_search-0001-p_card_search-random-random_pool-p_random_pool-all-upgrade_1-1-hand-random-1_1 -> 上手升级后的卡
 exam_card_create_search = re.compile(r"e_effect-exam_card_create_search-0001-p_card_search-random-random_pool-p_random_pool-all-upgrade_1-1-hand-random-1_1")
 def match_exam_card_create_search(string):
     default_values = [0]
@@ -273,7 +273,7 @@ def match_all_effects(string):
     all_results.append(match_exam_playable_value_add(string))# 出牌数增加
     all_results.append(match_exam_hand_grave_count_card_draw(string))# 手牌去墓地，同样数量牌上手
     all_results.append(match_exam_card_draw(string))# 立刻抽卡
-    all_results.append(match_exam_card_create_search(string))# 上手一张SSR+
+    all_results.append(match_exam_card_create_search(string))# 上手一张升级后的卡
     all_results.append(match_exam_anti_debuff(string))# 负面效果无效回合数
     all_results.append(match_exam_block_restriction(string))# 元气增加无效回合数
     all_results.append(match_exam_card_search_effect_play_count_buff(string))# 下一张卡效果发动2次
@@ -496,7 +496,7 @@ class Effect:
         str_ += "出牌数 + " + str(self.exam_playable_value_add[0]) + "\n" if sum(self.exam_playable_value_add) > 0 else ""
         str_ += "手札から墓地に移動し、同じ枚数のカードを引く\n" if sum(self.exam_hand_grave_count_card_draw) > 0 else ""
         str_ += "カードを" + str(self.exam_card_draw[0]) + "枚引く\n" if sum(self.exam_card_draw) > 0 else ""
-        str_ += "SSR以上のカードを1枚引く\n" if sum(self.exam_card_create_search) > 0 else ""
+        str_ += "ランダムな強化済みスキルカードを、手札に 生成\n" if sum(self.exam_card_create_search) > 0 else ""
         str_ += "負の効果無効" + str(self.exam_anti_debuff[0]) + "ターン\n" if sum(self.exam_anti_debuff) > 0 else ""
         str_ += "元気増加無効" + str(self.exam_block_restriction[0]) + "ターン\n" if sum(self.exam_block_restriction) > 0 else ""
         str_ += "次のカード効果を2回発動\n" if sum(self.exam_search_effect_play_count_buff) > 0 else ""
@@ -568,12 +568,16 @@ def effect_exam_lesson_depend_block(effect: Effect, game: Any):
     
 # 7. 体力消耗增加
 def effect_exam_stamina_consumption_add(effect: Effect, game: Any):
+    if effect.exam_stamina_consumption_add[0] == 0:
+        return
     if game.stamina_consumption_add == 0:
         game.stamina_consumption_add_flag = True
     game.stamina_consumption_add += effect.exam_stamina_consumption_add[0]
 
 # 8. 体力消耗减少
 def effect_exam_stamina_consumption_down(effect: Effect, game: Any):
+    if effect.exam_stamina_consumption_down[0] == 0:
+        return
     if game.stamina_consumption_down == 0:
         game.stamina_consumption_down_flag = True
     game.stamina_consumption_down += effect.exam_stamina_consumption_down[0]
@@ -653,6 +657,7 @@ def effect_exam_card_create_search(effect: Effect, game: Any):
     if sum(effect.exam_card_create_search) == 0:
         return
     game.card_create_search = True
+    # 还未实现
 
 def effect_exam_anti_debuff(effect: Effect, game: Any):
     if effect.exam_anti_debuff[0] == 0:
@@ -685,6 +690,8 @@ def effect_exam_status_enchant(effect: Effect, game: Any):
         return
     tmp[effect.exam_status_enchant[0] - 1] += 1
     game.status_enchant = tmp
+
+
 def effect_roll(effects: list[Effect], game):
     pass
     for effect in effects:

@@ -525,12 +525,12 @@ class Game:
         obs_.append(1 if self.search_effect_play_count_buff else 0)
         obs_.extend(self.status_enchant)
         deck_obs = []
-        for card in self.exile:
-            deck_obs.append([4] + card.observe())
-        for card in self.discard:
-            deck_obs.append([3] + card.observe())
-        for card in self.deck:
-            deck_obs.append([2] + card.observe())
+        # for card in self.exile:
+        #     deck_obs.append([4] + card.observe())
+        # for card in self.discard:
+        #     deck_obs.append([3] + card.observe())
+        # for card in self.deck:
+        #     deck_obs.append([2] + card.observe())
         for i, card in enumerate(self.hand):
             deck_obs.append([1] + card.observe() if self.check_playable(i) else [0] + card.observe())
         obs_.append(deck_obs)

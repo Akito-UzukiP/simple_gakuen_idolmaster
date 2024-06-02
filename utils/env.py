@@ -21,7 +21,7 @@ class GakuenIdolMasterEnv(gym.Env):
         self.max_cards = 35
         self.max_hand_cards = 8
 
-        self.action_space = spaces.Discrete(self.max_hand_cards)
+        self.action_space = spaces.Discrete(self.max_hand_cards, start=0)
         #print(self.max_cards)
         # 观察空间
         self.env_shape = self.game.observe()[0].shape[0]
