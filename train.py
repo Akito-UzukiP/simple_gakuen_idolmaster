@@ -1,55 +1,34 @@
-from stable_baselines3 import PPO, DQN
+from utils import agent, cards, effects, env, game, triggers
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.utils import get_device
-from stable_baselines3.common.callbacks import CheckpointCallback
-from utils.env import GakuenIdolMasterEnv
-from utils.agent import CustomExtractor
+from stable_baselines3.common.callbacks import CheckpointCallback, BaseCallback
+from stable_baselines3 import PPO, DQN, A2C, SAC
 
+import tensorboard
+player_info_dim = 32
+card_info_dim = 15
+effect_info_dim = 49
+max_cards = 8  # 只观察手牌，最多5张
+max_effects_per_card = 4  # 假设每张卡片最多有5个效果
 policy_kwargs = dict(
-    features_extractor_class=CustomExtractor,
-    features_extractor_kwargs=dict(features_dim=128))
+    features_extractor_class=agent.CustomExtractor,
+    features_extractor_kwargs=dict(player_info_dim=player_info_dim, card_info_dim=card_info_dim, effect_info_dim=effect_info_dim, d_model=64, max_cards=max_cards, max_effects_per_card=max_effects_per_card))
 
-env = make_vec_env(GakuenIdolMasterEnv, n_envs=40)
+env = make_vec_env(env.GakuenIdolMasterEnv, n_envs=4, env_kwargs={'max_cards': 8})
+model = PPO(
+    "MultiInputPolicy",
+    env,
+    verbose=1,
+    tensorboard_log="./log",
+    device=get_device(),
+    policy_kwargs=policy_kwargs,
+    batch_size=4096,  # 调整批量大小，使其成为 n_steps * n_envs 的因数
+    n_steps=1024,  # 一次训练的步数
+    n_epochs=20
+    
+)
+model = PPO.load("ppo_gakuen_idol_master", device=get_device(), env=env, force_reset=True)
 
-# model = PPO(
-#     "MultiInputPolicy",
-#     env,
-#     verbose=1,
-#     tensorboard_log="./log",
-#     device=get_device(),
-#     policy_kwargs=policy_kwargs,
-#     n_epochs=10,  # 保持训练轮数合理
-#     n_steps=2048,  # 设置n_steps
-#     batch_size=8192  # 调整批量大小，使其成为 n_steps * n_envs 的因数
-# )
-# model = DQN(
-#     "MultiInputPolicy",
-#     env,
-#     verbose=1,
-#     tensorboard_log="./log",
-#     device=get_device(),
-#     policy_kwargs=policy_kwargs,
-#     batch_size=1024,  # 调整批量大小，使其成为 n_steps * n_envs 的因数
-#     exploration_final_eps=0.05,
-# )
-
-model = DQN.load("./models/dqn_gakuen_idol_master", device=get_device(), env=env, force_reset=True)
-# model.exploration_fraction = 0
-# model.exploration_initial_eps = 0.05
-# model.exploration_final_eps = 0.05
-# model.exploration_final_eps = 0.05
-# model.learning_starts = 0
-# model.start_time = 0
-
-
-# 设置保存检查点的回调函数，每保存10000步
-# checkpoint_callback = CheckpointCallback(save_freq=81920, save_path='./models/',
-#                                          name_prefix='dqn_gakuen_idol_master')
-
-# 开始训练并使用回调函数保存检查点
-if __name__ == "__main__":
-    model.learn(total_timesteps=8192000, log_interval=1, reset_num_timesteps=False)
-
-    # 手动保存模型（可选）
-    model.save("dqn_gakuen_idol_master")
+model.learn(total_timesteps=3276800, log_interval=1,reset_num_timesteps=True, progress_bar=True)
+model.save("ppo_gakuen_idol_master_hiro_block")

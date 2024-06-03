@@ -1,124 +1,156 @@
 import gym
 from gym import spaces
 import numpy as np
-try:
-    from .game import Game
-    from . import cards
-except:
-    from game import Game
-    import cards
 import random
+
+from . import cards, effects, game
+try:
+    from . import triggers
+    from .game import Game
+except:
+    import utils.game as game, utils.cards as cards, utils.effects as effects, utils.triggers as triggers
+    from utils.game import Game
+
+player_info_dim = 32
+card_info_dim = 15
+effect_info_dim = 49
+max_cards = 8  # 假设每个玩家最多有10张卡片
+max_effects_per_card = 4  # 假设每张卡片最多有5个效果
+
+# 定义卡片效果空间
+effect_space = spaces.Box(low=-np.inf, high=np.inf, shape=(max_effects_per_card, effect_info_dim), dtype=np.float32)
+
+# 定义卡片信息空间
+card_space = spaces.Dict({
+    'info': spaces.Box(low=-np.inf, high=np.inf, shape=(card_info_dim,), dtype=np.float32),
+    'effect': effect_space  # 使用固定最大效果数量来表示
+})
+
+# 定义观察空间
+
+
+
+
 class GakuenIdolMasterEnv(gym.Env):
-    def __init__(self):
+    def __init__(self, max_cards=5, max_hand_cards=5):
         super(GakuenIdolMasterEnv, self).__init__()
         
-        self.game = Game(hp=30, total_turn=8, target=60)
-        self.game.deck = cards.create_ktn_deck()
-        self.game.shuffle()
-        self.game.start_round()
-        
+        self.max_stamina = 27
+        self.total_turn = 11
+        self.target = 100
+        self.additional_cards = random.randint(5, 15)
+        self.plus_cards = random.randint(3, 8)
+        self.game = Game(max_stamina=self.max_stamina, turn_left=self.total_turn, target_lesson=self.target)
+        #self.deck = cards.random_hiro_deck(self.additional_cards, self.plus_cards)
+        self.deck = cards.random_hiro_block_deck(self.additional_cards)
+        self.game.deck = self.deck
+        self.game.shuffle_all_to_deck()
         # 动作空间：选择手牌中的一张卡
-        self.max_cards = 35
-        self.max_hand_cards = 8
+        self.max_cards = max_cards
+        self.max_hand_cards = max_hand_cards
 
-        self.action_space = spaces.Discrete(self.max_hand_cards, start=0)
+        self.action_space = spaces.Discrete(self.max_hand_cards, 0)
+        observation_space = spaces.Dict({
+            'game': spaces.Box(low=-np.inf, high=np.inf, shape=(player_info_dim,), dtype=np.float32),
+            'card': spaces.Box(low=-np.inf, high=np.inf, shape=(self.max_cards, card_info_dim + max_effects_per_card * effect_info_dim), dtype=np.float32)  # 固定最大卡片数量和效果数量
+        })
+        self.observation_space = observation_space
         #print(self.max_cards)
         # 观察空间
-        self.env_shape = self.game.observe()[0].shape[0]
-        self.card_shape = (self.max_cards, 20)
-        #print(self.env_shape, self.card_shape)
-        self.observation_space = spaces.Dict({
-            'game': spaces.Box(low=-10, high=10, shape=(self.env_shape,), dtype=np.float32),
-            'card': spaces.Box(low=-10, high=10, shape=self.card_shape, dtype=np.float32)
-        })
-        self.current_score = 0
+
+        
+
+        self.current_lesson = 0
         self.seed()
-        self.last_steps = [-1] * self.game.init_turn
 
-        # 随机mapping，将0-7映射到0-7，打乱排序，防止模型记住顺序
-        self.use_random_mapping = False
-        if self.use_random_mapping:
-            self.random_mapping = np.arange(self.max_cards)
-            np.random.shuffle(self.random_mapping)()
+        self.last_steps = [-2] * self.game.turn_left
 
-    def _apply_mapping(self, observation):
-        mapped_cards = observation['card'][self.random_mapping]
-        return {
-            'game': observation['game'],
-            'card': mapped_cards
-        }
+
+        self.game.start_turn()
 
     def seed(self, seed=None):
         self.np_random, seed = gym.utils.seeding.np_random(seed)
         return [seed]
     def _get_obs(self):
         observation = self.game.observe()
-        # observation[1]要补到self.max_cards，用[-1] + [0]*19
-        card_observation = np.array(observation[1])
-        num_rows_to_add = self.max_cards - observation[1].shape[0]
-        if num_rows_to_add > 0:
-            fill_value = np.array([[-1] + [0]*19] * num_rows_to_add)
-            card_observation = np.vstack((observation[1], fill_value))
-        if num_rows_to_add < 0:
-            card_observation = card_observation[:self.max_cards]
-        
-        obs = {
-            'game': np.array(observation[0]),
+        # obs = {
+        #     "game": np.array
+        #     "card":[{
+        #         "info": np.array
+        #         "effect": np.array
+        #     } for i in deck_info]
+        # }
+        # card部分展平，展平后的维度为(max_cards, card_info_dim + max_effects_per_card * effect_info_dim)，不足部分用0填充
+        card_observation = np.zeros((max_cards, card_info_dim + max_effects_per_card * effect_info_dim))
+        for i, card in enumerate(observation['card']):
+            card_observation[i, :card_info_dim] = card['info']
+            #print(card['effect'].shape[0] * effect_info_dim)
+            #print(card['effect'].flatten().shape)
+            card_observation[i, card_info_dim:card_info_dim+card['effect'].shape[0] * effect_info_dim] = card['effect'].flatten()
+        observation = {
+            'game': observation['game'],
             'card': card_observation
         }
-        return self._apply_mapping(obs) if self.use_random_mapping else obs
+        return observation
     def reset(self):
-        hp = random.randint(10,30)
-        total_turn = random.randint(5,11)
-        target = random.randint(total_turn*10, total_turn*20)
-        self.game = Game(hp=hp, total_turn=total_turn, target=target)
-        total_cards = random.randint(20,34)
-        upgraded_cards = random.randint(0, total_cards-9)
-        self.game.deck = cards.create_random_ktn_deck(total_cards, upgraded_cards)
+        self.total_turn = random.randint(6, 12)
+        self.target = random.randint(self.total_turn*10, self.total_turn*20)
+        self.game = Game(max_stamina=self.max_stamina, turn_left=self.total_turn, target_lesson=self.target)
+        self.additional_cards = random.randint(10, 20)
+        self.plus_cards = random.randint(3, 8)
+        #self.deck = cards.random_hiro_deck(self.additional_cards, self.plus_cards)
+        self.deck = cards.random_hiro_block_deck(self.additional_cards)
+        self.game.deck = self.deck
+        self.game.shuffle_all_to_deck()
         #print(self.game.observe())
-        self.game.start_round()
-        self.current_score = 0
-        self.last_steps = [-1] * self.game.init_turn
-
+        self.game.start_turn()
+        self.current_lesson = 0
         return self._get_obs()
     def step(self, action):
         # 无效动作
         #print(action)
-        # 重复动作惩罚
         reward = 0
-        action = self.random_mapping[action] if self.use_random_mapping else action
+
+        # 重复动作惩罚
+        cnt = 0
         for i in range(len(self.last_steps)-1, -1, -1):
-            cnt = 0
             if action == self.last_steps[i]:
                 cnt +=1
-                if cnt >= 2:
-                    reward -= 5
+                if cnt >= 4:
+                    reward -= 30
+                    #print("重复动作")
+                    return self._get_obs(), -50 + self.game.current_turn*5 + reward, True, {}
             else :
                 break
         self.last_steps.pop(0)
         self.last_steps.append(int(action))
-        self.last_step = action
-        if not self.game.check_playable(action):
-            #print("无效动作")
-            # 找到第一个可打出的牌
-            return self._get_obs(), -50 + self.game.current_turn*5, True, {}
-        self.game.play(action)
-        self.game.end_round()
+        if action == self.max_hand_cards-1:
+            self.game.rest()
+        else:
+            if not self.game.check_playable(action):
+                #print("无效动作")
+                # 找到第一个可打出的牌
+                return self._get_obs(), -50 + self.game.current_turn*5 + reward, True, {}
+            self.game.play_card(action)
+        if self.game.playable_value == 0:
+            self.game.end_turn()
         done = self.game.is_over
-        self.game.score = min(self.game.score, self.game.target)
-        reward += self.game.score - self.current_score
+        self.game.lesson = min(self.game.lesson, self.game.target_lesson)
+        reward += self.game.lesson - self.current_lesson
         if done:
-            # 打牌类型的多样性给予奖励
-            reward += len(set(self.last_steps)) * 10
-            if self.game.score >= self.game.target:
+            if self.game.lesson >= self.game.target_lesson:
                 reward += 200
-                reward += self.game.hp *10
-                reward += self.game.turn_left * 40
-            reward += self.game.good_impression * 10
-            reward += self.game.robust * 3
+                reward += self.game.stamina * 8
+                reward += self.game.turn_left * 100
+            reward += self.game.review * 0.5
+            reward += self.game.block * 0.7
                 #reward += self.game.best_condition * 20
-        self.current_score = self.game.score
-        self.game.start_round()
+            reward += len(set(self.last_steps)) * 5
+        self.current_lesson = self.game.lesson
+        if self.game.playable_value == 0:
+            self.game.start_turn()
+        #print(reward)
+        #print(reward)
         return self._get_obs(), reward, done, {}
     
     def render(self, mode='human'):
@@ -127,5 +159,4 @@ class GakuenIdolMasterEnv(gym.Env):
 
 if __name__ == "__main__":
     env = GakuenIdolMasterEnv()
-    print(env.step(1))
-    print(env.step(1))
+    print(env.step(0))

@@ -4,8 +4,6 @@
 (WIP)
 
 ことね育成玩具可以运行，全量游戏功能还在开发中。
-可用的强化学习模型:
-[DQN](https://huggingface.co/AkitoP/simple_gakuen_idolmaster_dpo) - 放入models/下即可使用
 
 ## play.py
 直接自己玩，用于测试系统是否正常工作。
@@ -16,8 +14,6 @@
 ## play_with_model.py
 使用训练好的模型进行游戏
 
-## play_future.py
-加入所有卡片后的游戏，BUG未知，需要自行设置卡组
 
 
 ## 目前进度

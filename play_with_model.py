@@ -1,9 +1,8 @@
-from stable_baselines3 import PPO, DQN
+from stable_baselines3 import PPO, DQN, A2C
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.utils import get_device
 from utils.env import GakuenIdolMasterEnv
-from utils.agent import CardTransformer, CustomExtractor
 from utils import agent
 from utils import cards
 import torch
@@ -17,10 +16,10 @@ def predict_action(model, obs):
     return action
 
     
-env = GakuenIdolMasterEnv()
-model = DQN.load("models/dqn_gakuen_idol_master", device='cpu', env=env)
+env = GakuenIdolMasterEnv(max_cards=8)
+model = PPO.load("ppo_gakuen_idol_master", device='cpu', env=env)
 
-env.reset( )
+env.reset()
 print(env.game)
 obs = env._get_obs()
 done = False
@@ -38,6 +37,7 @@ while not done:
     
     total_rewards += reward
     print(env.game)
+    print(reward)
     cnt += 1
     if cnt > 30:
         break
