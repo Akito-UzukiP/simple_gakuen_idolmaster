@@ -209,6 +209,48 @@ def match_exam_card_upgrade(string):
     if exam_card_upgrade.match(string):
         return [1]
     return default_values
+
+# 0617新增， 1. 上手一张升级后的SSR  2. 几个持续效果
+# e_effect-exam_card_create_search-0001-p_card_search-random-random_pool-p_random_pool-ssr-upgrade_1-1-hand-random-1_1
+exam_card_create_search_ssr = re.compile(r"e_effect-exam_card_create_search-0001-p_card_search-random-random_pool-p_random_pool-ssr-upgrade_1-1-hand-random-1_1")
+def match_exam_card_create_search_ssr(string):
+    default_values = [0]
+    if exam_card_create_search_ssr.match(string):
+        return [1]
+    return default_values
+
+
+
+patterns = {
+    "exam_block": re.compile(r"block-(\d+)"),
+    "exam_card_play_aggressive": re.compile(r"card_play_aggressive-(\d+)"),
+    "exam_lesson": re.compile(r"lesson-(\d+)-(\d+)"),
+    "exam_review": re.compile(r"review-(\d+)"),
+    "exam_lesson_depend_block": re.compile(r"lesson_depend_block-(\d+)-(\d+)-(\d+)"),
+    "exam_stamina_consumption_add": re.compile(r"stamina_consumption_add-(\d+)"),
+    "exam_stamina_consumption_down": re.compile(r"stamina_consumption_down-(\d+)"),
+    "exam_stamina_consumption_down_fix": re.compile(r"stamina_consumption_down_fix-(\d+)"),
+    "exam_stamina_recover_fix_once": re.compile(r"stamina_recover_fix_once-(\d+)"),
+    "exam_parameter_buff": re.compile(r"parameter_buff-(\d+)"),
+    "exam_lesson_buff": re.compile(r"lesson_buff-(\d+)"),
+    "exam_multiple_lesson_buff_lesson": re.compile(r"multiple_lesson_buff_lesson-(\d+)-(\d+)-(\d+)"),
+    "exam_lesson_depend_exam_card_play_aggressive": re.compile(r"lesson_depend_exam_card_play_aggressive-(\d+)-(\d+)"),
+    "exam_parameter_buff_multiple_per_turn": re.compile(r"parameter_buff_multiple_per_turn-(\d+)"),
+    "exam_lesson_depend_exam_review": re.compile(r"lesson_depend_exam_review-(\d+)-(\d+)"),
+    "exam_effect_timer_draw": re.compile(r"effect_timer-(\d+)-(\d+)-card_draw-(\d+)"),
+    "exam_effect_timer_lesson": re.compile(r"effect_timer-(\d+)-(\d+)-lesson-(\d+)-(\d+)"),
+    "exam_effect_timer_card_upgrade": re.compile(r"effect_timer-(\d+)-(\d+)-card_upgrade-p_card_search-hand-all-0_0"),
+    "exam_extra_turn": re.compile(r"extra_turn"),
+    "exam_playable_value_add": re.compile(r"playable_value_add-(\d+)"),
+    "exam_hand_grave_count_card_draw": re.compile(r"hand_grave_count_card_draw"),
+    "exam_card_draw": re.compile(r"card_draw-(\d+)"),
+    "exam_card_create_search": re.compile(r"card_create_search-0001-p_card_search-random-random_pool-p_random_pool-all-upgrade_1-1-hand-random-1_1"),
+    "exam_anti_debuff": re.compile(r"anti_debuff-(\d+)"),
+    "exam_block_restriction": re.compile(r"block_restriction-(\d+)"),
+    "exam_card_search_effect_play_count_buff": re.compile(r"card_search_effect_play_count_buff-0001-01-inf-p_card_search-playing-all-0_0"),
+    "exam_card_upgrade": re.compile(r"card_upgrade-p_card_search-hand-all-0_0"),
+}
+
 # 特殊持续效果
 # e_effect-exam_status_enchant-inf-enchant-p_card-01-men-2_034-enc01 以降、 アクティブスキルカード 使用時、 固定元気  +2  0
 # e_effect-exam_status_enchant-inf-enchant-p_card-01-men-2_038-enc01 以降、 アクティブスキルカード 使用時、 集中  +1 1
@@ -236,6 +278,19 @@ def match_e_effects(string):
             #print(pattern)
             return [i+1]
     return [0]
+
+drink_effects = [
+    "e_effect-exam_status_enchant-inf-enchant-pdrink_01-3-002-enc01",
+    "e_effect-exam_status_enchant-inf-enchant-pdrink_02-3-006-enc01",
+    "e_effect-exam_status_enchant-inf-enchant-pdrink_02-3-007-enc01"
+]
+
+def match_drink_effects(string):
+    for i,pattern in enumerate(drink_effects):
+        if pattern in string:
+            return [i+1]
+    return [0]
+
 
 all_res = [exam_block, exam_card_play_aggressive, exam_lesson, exam_review, 
            exam_lesson_depend_block, 
@@ -279,6 +334,8 @@ def match_all_effects(string):
     all_results.append(match_exam_card_search_effect_play_count_buff(string))# 下一张卡效果发动2次
     all_results.append(match_exam_card_upgrade(string))# 升级所有手牌
     all_results.append(match_e_effects(string))# 特殊效果
+    all_results.append(match_exam_card_create_search_ssr(string))# 上手一张SSR+
+    all_results.append(match_drink_effects(string))# 特殊效果
 
     return all_results
 
@@ -359,12 +416,17 @@ class Effect:
         self.exam_search_effect_play_count_buff = [0]
         self.exam_card_upgrade = [0]
 
-        self.exam_status_enchant = [0] * 8
+
+        self.exam_status_enchant = [0] #* 8
+
+        # 0617新增
+        self.exam_card_create_search_ssr = [0]
+        self.exam_drink_effect = [0] #* 3
 
         self.card_play_trigger = [0] * len(triggers.card_play_trigger)
 
 
-    def set_effect(self, effects: list[int], triggers: list[int]):
+    def set_effect(self, effects: list[int], triggers: list[int] = None):
         self.exam_block = effects[0]
         self.exam_card_play_aggressive = effects[1]
         self.exam_lesson = effects[2]
@@ -395,8 +457,12 @@ class Effect:
         self.exam_card_upgrade = effects[26]
         self.exam_status_enchant = effects[27]
 
+        # 0617新增
+        self.exam_card_create_search_ssr = effects[28]
+        self.exam_drink_effect = effects[29]
 
-        self.card_play_trigger = triggers
+        if triggers is not None:
+            self.card_play_trigger = triggers 
 
     def observe(self):
         # 返回所有属性的cat
@@ -517,7 +583,10 @@ class Effect:
         str_ += "以降、 メンタルスキルカード 使用時、 やる気  +1\n" if self.exam_status_enchant[0] == 6 else ""
         str_ += "以降、 メンタルスキルカード 使用時、 好印象  +1\n" if self.exam_status_enchant[0] == 7 else ""
         str_ += "以降、ターン終了時 好印象 が3以上の場合、 好印象  +3\n" if self.exam_status_enchant[0] == 8 else ""
-
+        # 0617新增饮料
+        str_ += "以降、ターン終了時、集中 + 1\n" if self.exam_drink_effect[0] == 1 else ""
+        str_ += "以降、ターン終了時、好印象 + 1\n" if self.exam_drink_effect[0] == 2 else ""
+        str_ += "以降、ターン終了時、やる気 + 1\n" if self.exam_drink_effect[0] == 3 else ""
 
         return str_
     
@@ -570,8 +639,10 @@ def effect_exam_lesson_depend_block(effect: Effect, game: Any):
 def effect_exam_stamina_consumption_add(effect: Effect, game: Any):
     if effect.exam_stamina_consumption_add[0] == 0:
         return
+    # print("at effects")
+    # print(game.stamina_consumption_add, effect.exam_stamina_consumption_add[0])
     if game.stamina_consumption_add == 0:
-        game.stamina_consumption_add_flag = True
+        game.stamina_consumption_add_Flag = True
     game.stamina_consumption_add += effect.exam_stamina_consumption_add[0]
 
 # 8. 体力消耗减少
@@ -685,7 +756,7 @@ def effect_exam_card_upgrade(effect: Effect, game: Any):
 
 def effect_exam_status_enchant(effect: Effect, game: Any):
     # 转化为one-hot
-    tmp = [0] * 8
+    tmp = game.status_enchant
     if sum(effect.exam_status_enchant) == 0:
         return
     tmp[effect.exam_status_enchant[0] - 1] += 1
@@ -740,6 +811,17 @@ def read_effect_of_card(card: dict):
         trigger_list = triggers.match_all_triggers_exam_card(trigger_str)
         tmp_effect = Effect()
         tmp_effect.set_effect(effect_list, trigger_list)
+        all_effects.append(tmp_effect)
+    return all_effects
+
+def read_effect_of_drink(drink: dict):
+    effect_list = drink.get("produceDrinkEffectIds")
+    all_effects = []
+    for effect in effect_list:
+        effect_str = effect.replace("p_drink_effect-", "")
+        effect_list = match_all_effects(effect_str)
+        tmp_effect = Effect()
+        tmp_effect.set_effect(effect_list, [])
         all_effects.append(tmp_effect)
     return all_effects
 

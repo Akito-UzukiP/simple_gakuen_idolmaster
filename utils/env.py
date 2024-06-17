@@ -83,6 +83,8 @@ class GakuenIdolMasterEnv(gym.Env):
         # card部分展平，展平后的维度为(max_cards, card_info_dim + max_effects_per_card * effect_info_dim)，不足部分用0填充
         card_observation = np.zeros((max_cards, card_info_dim + max_effects_per_card * effect_info_dim))
         for i, card in enumerate(observation['card']):
+            if i >= self.max_cards:
+                break
             card_observation[i, :card_info_dim] = card['info']
             #print(card['effect'].shape[0] * effect_info_dim)
             #print(card['effect'].flatten().shape)
@@ -93,8 +95,8 @@ class GakuenIdolMasterEnv(gym.Env):
         }
         return observation
     def reset(self):
-        self.total_turn = random.randint(6, 12)
-        self.target = random.randint(self.total_turn*10, self.total_turn*20)
+        self.total_turn = random.randint(12, 18)
+        self.target = random.randint(self.total_turn*15, self.total_turn*40)
         self.game = Game(max_stamina=self.max_stamina, turn_left=self.total_turn, target_lesson=self.target)
         self.additional_cards = random.randint(10, 20)
         self.plus_cards = random.randint(3, 8)
@@ -119,7 +121,7 @@ class GakuenIdolMasterEnv(gym.Env):
                 if cnt >= 4:
                     reward -= 30
                     #print("重复动作")
-                    return self._get_obs(), -50 + self.game.current_turn*5 + reward, True, {}
+                    return self._get_obs(), -50 + min(self.game.current_turn*5,0) + reward, True, {}
             else :
                 break
         self.last_steps.pop(0)
@@ -139,7 +141,7 @@ class GakuenIdolMasterEnv(gym.Env):
         reward += self.game.lesson - self.current_lesson
         if done:
             if self.game.lesson >= self.game.target_lesson:
-                reward += 200
+                reward += 400
                 reward += self.game.stamina * 8
                 reward += self.game.turn_left * 100
             reward += self.game.review * 0.5

@@ -17,7 +17,7 @@ def predict_action(model, obs):
 
     
 env = GakuenIdolMasterEnv(max_cards=8)
-model = PPO.load("ppo_gakuen_idol_master", device='cpu', env=env)
+model = PPO.load("ppo_gakuen_idol_master_hiro_block", device='cpu', env=env)
 
 env.reset()
 print(env.game)

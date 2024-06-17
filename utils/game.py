@@ -483,11 +483,15 @@ class Game:
                 self.block_restriction_Flag = False
             else:
                 self.block_restriction -= 1
+        # print(self.stamina_consumption_add)
+        # print(self.stamina_consumption_add_Flag)
         if self.stamina_consumption_add:
             if self.stamina_consumption_add_Flag:
                 self.stamina_consumption_add_Flag = False
             else:
                 self.stamina_consumption_add -= 1
+        # print(self.stamina_consumption_add)
+        # print(self.stamina_consumption_add_Flag)
         if self.stamina_consumption_down:
             if self.stamina_consumption_down_Flag:
                 self.stamina_consumption_down_Flag = False

@@ -28,7 +28,7 @@ model = PPO(
     n_epochs=20
     
 )
-model = PPO.load("ppo_gakuen_idol_master", device=get_device(), env=env, force_reset=True)
+model = PPO.load("ppo_gakuen_idol_master_hiro_block", device=get_device(), env=env, force_reset=True)
 
-model.learn(total_timesteps=3276800, log_interval=1,reset_num_timesteps=True, progress_bar=True)
+model.learn(total_timesteps=3276800*2, log_interval=1,reset_num_timesteps=True, progress_bar=True)
 model.save("ppo_gakuen_idol_master_hiro_block")

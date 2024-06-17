@@ -52,6 +52,17 @@ def match_all_triggers_start_turn(text):
     return trigger
 
 
+triggers_exam_card = {
+    0: lambda g: g.card_play_aggressive >= 3,
+    1: lambda g: g.card_play_aggressive >= 6,
+    2: lambda g: g.lesson_buff >= 3,
+    3: lambda g: g.lesson_buff >= 6,
+    4: lambda g: g.parameter_buff > 0,
+    5: lambda g: g.review >= 1,
+    6: lambda g: g.review >= 3,
+    7: lambda g: g.max_stamina * 0.5 <= g.stamina,
+}
+
 def check_trigger_exam_card(trigger: list[int], game: Any):
     '''
     检查卡牌的触发器
@@ -59,32 +70,23 @@ def check_trigger_exam_card(trigger: list[int], game: Any):
     '''
     assert len(trigger) == len(card_play_trigger)
     triggered = True
-    if trigger[0]:
-        if game.card_play_aggressive < 3:
+    for i, t in enumerate(trigger):
+        # 如果触发器位为1，但触发器条件不满足，则返回False
+        if t and not triggers_exam_card[i](game):
             triggered = False
-    if trigger[1]:
-        if game.card_play_aggressive < 6:
-            triggered = False
-    if trigger[2]:
-        if game.lesson_buff < 3:
-            triggered = False
-    if trigger[3]:
-        if game.lesson_buff < 6:
-            triggered = False
-    if trigger[4]:
-        if game.parameter_buff == 0:
-            triggered = False
-    if trigger[5]:
-        if game.review < 1:
-            triggered = False
-    if trigger[6]:
-        if game.review < 3:
-            triggered = False
-    if trigger[7]:
-        if game.max_stamina * 0.5 > game.stamina:
-            triggered = False
+            break
     return triggered
-        
+
+
+
+triggers_start_turn = {
+    0: lambda g: g.lesson / g.target_lesson <= 1,
+    1: lambda g: g.block == 0,
+    2: lambda g: g.parameter_buff != 0,
+    3: lambda g: g.max_stamina * 0.5 < g.stamina,
+    4: lambda g: g.turn_progress >= 3
+}
+
 def check_trigger_start_turn(trigger: list[int], game: Any):
     '''
     检查回合开始的触发器
@@ -92,19 +94,10 @@ def check_trigger_start_turn(trigger: list[int], game: Any):
     '''
     assert len(trigger) == len(start_turn_trigger)
     triggered = True
-    if trigger[0]:
-        if game.lesson / game.target_lesson > 1:
+    for i, t in enumerate(trigger):
+        # 如果触发器位为1，但触发器条件不满足，则返回False
+        if t and not triggers_start_turn[i](game):
             triggered = False
-    if trigger[1]:
-        if game.block > 0:
-            triggered = False
-    if trigger[2]:
-        if game.parameter_buff == 0:
-            triggered = False
-    if trigger[3]:
-        if game.max_stamina * 0.5 > game.stamina:
-            triggered = False
-    if trigger[4]:
-        if game.turn_progress < 3:
-            triggered = False
+            break
     return triggered
+        
